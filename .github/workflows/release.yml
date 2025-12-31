@@ -62,6 +62,7 @@ jobs:
       - name: Build for Cloud
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.version_num }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         run: |
           NODE_OPTIONS="--max-old-space-size=4096" npm run build
 

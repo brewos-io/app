@@ -79,6 +79,9 @@ export interface BackendInfo {
   // Mode detection
   mode: 'local' | 'cloud';
   
+  // OAuth configuration (cloud mode only)
+  googleClientId?: string | null;  // Google OAuth Client ID (public, safe to expose)
+  
   // Connection status
   picoConnected?: boolean;      // Whether Pico is connected (ESP32 only)
   apMode?: boolean;             // Whether ESP32 is in AP mode
