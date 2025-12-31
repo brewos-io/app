@@ -66,6 +66,8 @@ jobs:
         run: npm ci
 
       - name: Build for Cloud
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         run: npm run build
 
       - name: Verify Build Output
