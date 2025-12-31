@@ -14,7 +14,6 @@ import {
   HardDrive,
   Cpu,
   RefreshCw,
-  AlertTriangle,
 } from "lucide-react";
 import { useDevMode } from "@/lib/dev-mode";
 import { formatBytes } from "@/lib/utils";
@@ -155,7 +154,7 @@ export function Logs() {
           </Button>
           <PageHeader
             title="System Logs"
-            subtitle="Debug logging (dev mode feature)"
+            subtitle="Real-time system events and debug information"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -173,22 +172,6 @@ export function Logs() {
           </Button>
         </div>
       </div>
-
-      {/* Dev Mode Only Notice */}
-      {!devMode && (
-        <Card>
-          <div className="flex items-center gap-3 text-amber-500">
-            <AlertTriangle className="w-5 h-5" />
-            <div>
-              <p className="font-medium">Dev Mode Required</p>
-              <p className="text-sm text-theme-muted">
-                Enable dev mode in settings to access device log buffer
-                features.
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
 
       {/* Device Log Buffer Card */}
       {devMode && (
@@ -227,7 +210,9 @@ export function Logs() {
                   <span className="text-theme-muted">Buffer Usage</span>
                   <span className="font-mono">
                     {logInfo
-                      ? `${formatBytes(logInfo.size)} / ${formatBytes(logInfo.maxSize)}`
+                      ? `${formatBytes(logInfo.size)} / ${formatBytes(
+                          logInfo.maxSize
+                        )}`
                       : "Loading..."}
                   </span>
                 </div>
@@ -237,7 +222,10 @@ export function Logs() {
                     <div
                       className="bg-amber-500 h-2 rounded-full transition-all"
                       style={{
-                        width: `${Math.min(100, (logInfo.size / logInfo.maxSize) * 100)}%`,
+                        width: `${Math.min(
+                          100,
+                          (logInfo.size / logInfo.maxSize) * 100
+                        )}%`,
                       }}
                     />
                   </div>
@@ -320,8 +308,7 @@ export function Logs() {
           <CardTitle>Real-time Logs</CardTitle>
         </CardHeader>
         <p className="text-xs text-theme-muted mb-4">
-          Live WebSocket log messages (operational events only - always
-          available).
+          Live system log messages broadcast in real-time via WebSocket.
         </p>
         <div className="h-[calc(100vh-40rem)]">
           <LogViewer maxHeight="h-full" />
