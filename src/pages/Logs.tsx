@@ -14,6 +14,7 @@ import {
   HardDrive,
   Cpu,
   RefreshCw,
+  Bug,
 } from "lucide-react";
 import { useDevMode } from "@/lib/dev-mode";
 import { formatBytes } from "@/lib/utils";
@@ -23,6 +24,7 @@ interface LogInfo {
   size: number;
   maxSize: number;
   picoForwarding: boolean;
+  debugLogs: boolean;
 }
 
 export function Logs() {
@@ -34,6 +36,7 @@ export function Logs() {
   const [downloading, setDownloading] = useState(false);
   const [togglingBuffer, setTogglingBuffer] = useState(false);
   const [togglingPico, setTogglingPico] = useState(false);
+  const [togglingDebug, setTogglingDebug] = useState(false);
 
   // Fetch log info from device (local mode only - uses relative path)
   const fetchLogInfo = useCallback(async () => {
@@ -133,6 +136,27 @@ export function Logs() {
       console.error("Failed to toggle Pico log forwarding:", error);
     } finally {
       setTogglingPico(false);
+    }
+  };
+
+  // Toggle debug logs
+  const toggleDebugLogs = async (enabled: boolean) => {
+    try {
+      setTogglingDebug(true);
+
+      const formData = new FormData();
+      formData.append("enabled", enabled.toString());
+
+      await fetch("/api/logs/debug", {
+        method: "POST",
+        body: formData,
+      });
+
+      await fetchLogInfo();
+    } catch (error) {
+      console.error("Failed to toggle debug logs:", error);
+    } finally {
+      setTogglingDebug(false);
     }
   };
 
@@ -264,6 +288,43 @@ export function Logs() {
                 performance.
               </p>
             )}
+          </div>
+        </Card>
+      )}
+
+      {/* Debug Logs Toggle (dev mode) */}
+      {devMode && (
+        <Card>
+          <CardHeader>
+            <CardTitle icon={<Bug className="w-5 h-5" />}>
+              Debug Logs
+            </CardTitle>
+            <Badge variant={logInfo?.debugLogs ? "success" : "default"}>
+              {logInfo?.debugLogs ? "Enabled" : "Disabled"}
+            </Badge>
+          </CardHeader>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-theme">
+                  Enable DEBUG Level Logs
+                </p>
+                <p className="text-xs text-theme-muted">
+                  Show DEBUG level logs in addition to INFO, WARN, and ERROR
+                </p>
+              </div>
+              <Toggle
+                checked={logInfo?.debugLogs ?? false}
+                onChange={toggleDebugLogs}
+                disabled={togglingDebug}
+              />
+            </div>
+
+            <p className="text-xs text-theme-muted">
+              When enabled, DEBUG logs are shown in Serial, log buffer, and WebSocket.
+              Setting persists across reboots and applies early in boot to capture boot logs.
+            </p>
           </div>
         </Card>
       )}

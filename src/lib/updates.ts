@@ -16,7 +16,7 @@ export interface VersionInfo {
   downloadUrl?: string;
   isPrerelease: boolean;
   // Additional info for dev/beta builds
-  commitSha?: string;      // First 7 chars of commit SHA
+  commitSha?: string; // First 7 chars of commit SHA
   assetUpdatedAt?: string; // When the assets were last updated (more accurate for dev builds)
 }
 
@@ -31,7 +31,7 @@ export interface UpdateCheckResult {
 }
 
 // GitHub repository for fetching releases
-const GITHUB_REPO = "mizrachiran/brewos";
+const GITHUB_REPO = "brewos-io/firmware";
 
 /**
  * Parse semantic version string
@@ -178,7 +178,9 @@ async function fetchGitHubReleases(): Promise<VersionInfo[]> {
       if ((isDev || isBeta) && release.assets && release.assets.length > 0) {
         // Find the most recently updated asset
         const latestAsset = release.assets.reduce((latest, asset) => {
-          return new Date(asset.updated_at) > new Date(latest.updated_at) ? asset : latest;
+          return new Date(asset.updated_at) > new Date(latest.updated_at)
+            ? asset
+            : latest;
         });
         effectiveDate = latestAsset.updated_at;
       }
@@ -187,7 +189,9 @@ async function fetchGitHubReleases(): Promise<VersionInfo[]> {
       // Format in release notes: "Commit: abc1234" or "Build: abc1234"
       let commitSha: string | undefined;
       if (release.body) {
-        const commitMatch = release.body.match(/(?:Commit|Build|SHA):\s*([a-f0-9]{7,40})/i);
+        const commitMatch = release.body.match(
+          /(?:Commit|Build|SHA):\s*([a-f0-9]{7,40})/i
+        );
         if (commitMatch) {
           commitSha = commitMatch[1].substring(0, 7);
         }
@@ -241,7 +245,8 @@ function getMockVersions(): VersionInfo[] {
       version: "1.1.0-beta.1",
       channel: "beta",
       releaseDate: "2024-11-25",
-      releaseNotes: "## Beta Release\n- Initial beta with new features\n\nCommit: e4f5g6h",
+      releaseNotes:
+        "## Beta Release\n- Initial beta with new features\n\nCommit: e4f5g6h",
       downloadUrl: `${repoUrl}/releases/tag/v1.1.0-beta.1`,
       isPrerelease: true,
       commitSha: "e4f5g6h",
