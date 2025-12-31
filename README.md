@@ -207,6 +207,18 @@ The cloud service serves the app for remote access:
 
 ---
 
+## Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/) directory:
+
+- **[App Development Guide](docs/README.md)** - Complete development documentation
+- **[PWA Features](docs/PWA.md)** - Progressive Web App setup and offline support
+- **[Push Notifications](docs/Push_Notifications.md)** - Push notification setup and usage
+- **[Power Metering](docs/Power_Metering.md)** - Power monitoring configuration
+- **[WebSocket Protocol](docs/WebSocket_Protocol.md)** - Message format reference
+
+---
+
 ## Related Repositories
 
 - **[firmware](https://github.com/brewos-io/firmware)** - ESP32 and Pico firmware

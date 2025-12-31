@@ -1,0 +1,89 @@
+# Build and release app artifacts
+# Triggered on version tags or manual dispatch
+name: "Release: Build App"
+
+on:
+  push:
+    tags:
+      - "app-v*" # e.g., app-v0.2.0
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g., app-v0.2.0)"
+        required: true
+
+concurrency:
+  group: release-app
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine ref to checkout
+        id: ref
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "ref=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Get Version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION_NUM="${VERSION#app-v}"
+          echo "version_num=$VERSION_NUM" >> $GITHUB_OUTPUT
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build for Cloud
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version_num }}
+        run: |
+          NODE_OPTIONS="--max-old-space-size=4096" npm run build
+
+      - name: Build for ESP32
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version_num }}
+          ESP32_DATA_DIR: ./dist-esp32
+        run: |
+          npm run build:esp32
+
+      - name: Upload Cloud Build
+        uses: actions/upload-artifact@v6
+        with:
+          name: app-cloud-${{ steps.version.outputs.version }}
+          path: dist/
+          retention-days: 90
+
+      - name: Upload ESP32 Build
+        uses: actions/upload-artifact@v6
+        with:
+          name: app-esp32-${{ steps.version.outputs.version }}
+          path: dist-esp32/
+          retention-days: 90
+
+
