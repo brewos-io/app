@@ -23,6 +23,7 @@ function getLogColor(level: string): string {
 
 export function LogViewer({ maxHeight = "max-h-64" }: LogViewerProps) {
   const logs = useStore((s) => s.logs);
+  const connectionState = useStore((s) => s.connectionState);
 
   // If maxHeight is "h-full", use full height; otherwise use max-height
   const heightClass = maxHeight === "h-full" ? "h-full" : maxHeight;
@@ -45,7 +46,22 @@ export function LogViewer({ maxHeight = "max-h-64" }: LogViewerProps) {
           </div>
         ))
       ) : (
-        <p className="text-theme-muted text-center py-4">No logs available</p>
+        <div className="text-theme-muted text-center py-8 space-y-2">
+          <p className="font-medium">No logs available</p>
+          {connectionState !== "connected" && (
+            <p className="text-xs text-amber-400">
+              ⚠️ Device not connected (status: {connectionState})
+            </p>
+          )}
+          <p className="text-xs">
+            Logs appear here when system events occur (WiFi connection, temperature changes, brewing events, etc.)
+          </p>
+          <p className="text-xs">
+            {connectionState === "connected"
+              ? "Try triggering an event (e.g., change temperature, connect/disconnect WiFi) to see logs"
+              : "Ensure your device is connected to see logs"}
+          </p>
+        </div>
       )}
     </div>
   );
