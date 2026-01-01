@@ -30,6 +30,7 @@ export interface IConnection {
 // Message types from ESP32 and cloud
 export type MessageType =
   | "status"
+  | "status_delta" // Delta status update (only changed fields)
   | "esp_status"
   | "pico_status"
   | "scale_status"
@@ -51,15 +52,15 @@ export type MessageType =
   // OTA update progress
   | "ota_progress"
   // Cloud-specific message types
-  | "connected"           // Cloud tells client if device is online
-  | "device_online"       // Device came online
-  | "device_offline"      // Device went offline
+  | "connected" // Cloud tells client if device is online
+  | "device_online" // Device came online
+  | "device_offline" // Device went offline
   // Cloud connection reliability messages
-  | "device_status"       // Device status update (online/offline with details)
-  | "token_expiring"      // Access token expiring soon, client should refresh
-  | "auth_refreshed"      // Auth token refresh result
-  | "pong"                // Application-level ping response
-  | "metrics"             // Connection quality metrics
+  | "device_status" // Device status update (online/offline with details)
+  | "token_expiring" // Access token expiring soon, client should refresh
+  | "auth_refreshed" // Auth token refresh result
+  | "pong" // Application-level ping response
+  | "metrics" // Connection quality metrics
   | "queued_message_sent"; // Notification that a queued message was delivered
 
 export interface WebSocketMessage {
@@ -72,14 +73,14 @@ export interface WebSocketMessage {
 export type MachineState =
   | "unknown"
   | "offline" // Device not connected (cloud mode)
-  | "init"    // 0: Initializing
-  | "idle"    // 1: Machine on but not heating
+  | "init" // 0: Initializing
+  | "idle" // 1: Machine on but not heating
   | "heating" // 2: Actively heating to setpoint
-  | "ready"   // 3: At temperature, ready to brew
+  | "ready" // 3: At temperature, ready to brew
   | "brewing" // 4: Brewing in progress
-  | "fault"   // 5: Fault condition
-  | "safe"    // 6: Safe state (all outputs off)
-  | "eco";    // 7: Eco mode (reduced temperature)
+  | "fault" // 5: Fault condition
+  | "safe" // 6: Safe state (all outputs off)
+  | "eco"; // 7: Eco mode (reduced temperature)
 
 export type MachineMode = "standby" | "on" | "eco";
 
@@ -745,14 +746,22 @@ export interface CloudDevice {
 export type FirstDayOfWeek = "sunday" | "monday";
 export type TemperatureUnit = "celsius" | "fahrenheit";
 
-export type Currency = 'USD' | 'EUR' | 'GBP' | 'AUD' | 'CAD' | 'JPY' | 'CHF' | 'ILS';
+export type Currency =
+  | "USD"
+  | "EUR"
+  | "GBP"
+  | "AUD"
+  | "CAD"
+  | "JPY"
+  | "CHF"
+  | "ILS";
 
 export interface UserPreferences {
   firstDayOfWeek: FirstDayOfWeek;
   use24HourTime: boolean;
   temperatureUnit: TemperatureUnit;
   // Electricity settings
-  electricityPrice: number;  // Price per kWh in selected currency
+  electricityPrice: number; // Price per kWh in selected currency
   currency: Currency;
   // App badge (PWA only) - shows dot on app icon when machine is on
   showAppBadge: boolean;

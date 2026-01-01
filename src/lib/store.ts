@@ -35,6 +35,7 @@ import type {
   DiagnosticHeader,
 } from "./types";
 import { useAppStore } from "./mode";
+import { getConnection } from "./connection";
 import type { Schedule } from "@/components/schedules";
 import {
   diagStatusFromCode,
@@ -55,6 +56,7 @@ interface BrewOSState {
   // Connection
   connectionState: ConnectionState;
   firstStateReceived: boolean; // Track if we've received first state message (for overlay delay)
+  lastStatusSequence: number | null; // Track last received sequence number for gap detection
 
   // Device identity
   device: DeviceInfo;
@@ -469,6 +471,7 @@ export const useStore = create<BrewOSState>()(
     // Initial state
     connectionState: "disconnected",
     firstStateReceived: false,
+    lastStatusSequence: null,
     device: defaultDevice,
     machine: defaultMachine,
     temps: defaultTemps,
@@ -507,6 +510,7 @@ export const useStore = create<BrewOSState>()(
           return {
             connectionState: newState,
             firstStateReceived: false, // Reset on disconnect
+            lastStatusSequence: null, // Reset sequence tracking on disconnect
             machine: {
               ...prevState.machine,
               // Keep the offline state if it was set, otherwise mark as unknown
@@ -539,8 +543,9 @@ export const useStore = create<BrewOSState>()(
         return; // Don't process this message, we're reloading
       }
 
-      // Track first state message (status or device_info) for overlay delay
-      const isStateMessage = type === "status" || type === "device_info";
+      // Track first state message (status, status_delta, or device_info) for overlay delay
+      const isStateMessage =
+        type === "status" || type === "status_delta" || type === "device_info";
       if (isStateMessage) {
         const currentState = get();
         if (!currentState.firstStateReceived) {
@@ -548,11 +553,62 @@ export const useStore = create<BrewOSState>()(
         }
       }
 
+      // Track sequence numbers for gap detection
+      const sequence = data.seq as number | undefined;
+      if (
+        sequence !== undefined &&
+        (type === "status" || type === "status_delta")
+      ) {
+        const currentState = get();
+
+        // On first message, if it's a delta, request full status
+        // (we need complete state to apply deltas to)
+        if (
+          currentState.lastStatusSequence === null &&
+          type === "status_delta"
+        ) {
+          console.log("First message is delta, requesting full status");
+          const connection = getConnection();
+          if (connection) {
+            connection.send("request_full_status");
+          }
+        }
+
+        // Check for sequence gaps (missed updates)
+        if (currentState.lastStatusSequence !== null) {
+          const expectedSequence = currentState.lastStatusSequence + 1;
+          // If we missed updates (gap > 1), request full status
+          if (sequence > expectedSequence) {
+            console.warn(
+              `Status sequence gap detected: expected ${expectedSequence}, got ${sequence}. Requesting full status.`
+            );
+            // Request full status from device
+            const connection = getConnection();
+            if (connection) {
+              connection.send("request_full_status");
+            }
+          } else if (sequence < expectedSequence) {
+            // Sequence went backwards (device reset?) - request full status
+            console.warn(
+              `Status sequence went backwards: expected ${expectedSequence}, got ${sequence}. Requesting full status.`
+            );
+            const connection = getConnection();
+            if (connection) {
+              connection.send("request_full_status");
+            }
+          }
+        }
+
+        set({ lastStatusSequence: sequence });
+      }
+
       switch (type) {
         // =======================================================================
         // Unified Status - Primary message type (comprehensive machine state)
+        // status_delta uses the same merge logic (only contains changed fields)
         // =======================================================================
-        case "status": {
+        case "status":
+        case "status_delta": {
           const machineData = data.machine as
             | Record<string, unknown>
             | undefined;
