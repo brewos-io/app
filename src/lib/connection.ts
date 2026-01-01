@@ -1,4 +1,5 @@
 import type { ConnectionConfig, ConnectionState, WebSocketMessage, IConnection } from './types';
+import { decode } from '@msgpack/msgpack';
 
 type MessageHandler = (message: WebSocketMessage) => void;
 type StateHandler = (state: ConnectionState) => void;
@@ -116,20 +117,32 @@ export class Connection implements IConnection {
           reject(error);
         };
 
-        this.ws.onmessage = (event) => {
+        this.ws.onmessage = async (event) => {
           this.lastMessageTime = Date.now();
           this.metrics.messagesReceived++;
           
           try {
-            const message = JSON.parse(event.data) as WebSocketMessage;
+            let message: WebSocketMessage;
+            
+            // Check if message is binary (MessagePack) or text (legacy JSON)
+            if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
+              // Binary MessagePack format
+              const buffer = event.data instanceof Blob 
+                ? await event.data.arrayBuffer() 
+                : event.data;
+              message = decode(new Uint8Array(buffer)) as WebSocketMessage;
+            } else {
+              // Legacy text/JSON format
+              message = JSON.parse(event.data) as WebSocketMessage;
+            }
             
             // Handle internal messages before notifying handlers
             this.handleInternalMessage(message);
             
             // Notify all message handlers
             this.notifyMessage(message);
-          } catch {
-            console.warn('[BrewOS] Invalid message:', event.data);
+          } catch (error) {
+            console.warn('[BrewOS] Invalid message:', error, event.data);
           }
         };
       } catch (error) {

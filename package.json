@@ -17,6 +17,7 @@
     "esp32": "Build for ESP32 local deployment (__ESP32__=true). Demo mode disabled, outputs to ../esp32/data"
   },
   "dependencies": {
+    "@msgpack/msgpack": "^3.1.3",
     "@react-oauth/google": "^0.12.1",
     "clsx": "^2.1.1",
     "html5-qrcode": "^2.3.8",
