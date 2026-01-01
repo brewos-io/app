@@ -21,7 +21,8 @@ const HIDE_DELAY_MS = 2000;
 
 // Delay before showing overlay to prevent flicker for fast connections
 // If state arrives within this time, overlay won't be shown
-const SHOW_DELAY_MS = 500;
+// Increased to prevent overlay during normal navigation/state requests
+const SHOW_DELAY_MS = 1500;
 
 // Overlay display states
 type OverlayState = "hidden" | "connecting" | "offline" | "updating";
@@ -131,6 +132,7 @@ export function ConnectionOverlay() {
     }
 
     // If state has been received and we're connected, don't show overlay
+    // This prevents overlay from showing during normal navigation/state requests
     if (firstStateReceived && isConnected && !isDeviceOffline) {
       setShouldShow(false);
       return;
@@ -141,13 +143,16 @@ export function ConnectionOverlay() {
     
     if (needsOverlay) {
       // Delay showing overlay by SHOW_DELAY_MS to prevent flicker for fast connections
+      // Also prevents overlay from showing during normal state requests (navigation, etc.)
       showTimer.current = setTimeout(() => {
         // Check again if state was received during delay
         const state = useStore.getState();
-        if (!state.firstStateReceived) {
+        // Only show overlay if we still haven't received state AND we're not connected
+        // This prevents overlay from appearing during normal navigation/state refresh
+        if (!state.firstStateReceived && state.connectionState !== "connected") {
           setShouldShow(true);
         } else {
-          // State arrived during delay - don't show overlay
+          // State arrived during delay or connection restored - don't show overlay
           setShouldShow(false);
         }
       }, SHOW_DELAY_MS);

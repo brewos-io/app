@@ -57,6 +57,7 @@ interface BrewOSState {
   connectionState: ConnectionState;
   firstStateReceived: boolean; // Track if we've received first state message (for overlay delay)
   lastStatusSequence: number | null; // Track last received sequence number for gap detection
+  pendingFullStatusRequest: boolean; // Track if we've requested full status (to ignore sequence gaps in response)
 
   // Device identity
   device: DeviceInfo;
@@ -472,6 +473,7 @@ export const useStore = create<BrewOSState>()(
     connectionState: "disconnected",
     firstStateReceived: false,
     lastStatusSequence: null,
+    pendingFullStatusRequest: false,
     device: defaultDevice,
     machine: defaultMachine,
     temps: defaultTemps,
@@ -511,6 +513,7 @@ export const useStore = create<BrewOSState>()(
             connectionState: newState,
             firstStateReceived: false, // Reset on disconnect
             lastStatusSequence: null, // Reset sequence tracking on disconnect
+            pendingFullStatusRequest: false, // Clear pending request on disconnect
             machine: {
               ...prevState.machine,
               // Keep the offline state if it was set, otherwise mark as unknown
@@ -570,12 +573,15 @@ export const useStore = create<BrewOSState>()(
           console.log("First message is delta, requesting full status");
           const connection = getConnection();
           if (connection) {
+            set({ pendingFullStatusRequest: true });
             connection.send("request_full_status");
           }
         }
 
         // Check for sequence gaps (missed updates)
-        if (currentState.lastStatusSequence !== null) {
+        // BUT: Skip gap detection if we have a pending full status request
+        // (the response to our request might have a different sequence number)
+        if (currentState.lastStatusSequence !== null && !currentState.pendingFullStatusRequest) {
           const expectedSequence = currentState.lastStatusSequence + 1;
           // If we missed updates (gap > 1), request full status
           if (sequence > expectedSequence) {
@@ -585,6 +591,7 @@ export const useStore = create<BrewOSState>()(
             // Request full status from device
             const connection = getConnection();
             if (connection) {
+              set({ pendingFullStatusRequest: true });
               connection.send("request_full_status");
             }
           } else if (sequence < expectedSequence) {
@@ -594,12 +601,17 @@ export const useStore = create<BrewOSState>()(
             );
             const connection = getConnection();
             if (connection) {
+              set({ pendingFullStatusRequest: true });
               connection.send("request_full_status");
             }
           }
         }
 
-        set({ lastStatusSequence: sequence });
+        // Update sequence and clear pending request flag (we received a status message)
+        set({ 
+          lastStatusSequence: sequence,
+          pendingFullStatusRequest: false // Clear flag - we got our response
+        });
       }
 
       switch (type) {
