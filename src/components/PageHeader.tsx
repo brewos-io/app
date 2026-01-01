@@ -25,7 +25,12 @@ export function PageHeader({
   }
 
   return (
-    <div className={cn("flex items-center justify-between", className)}>
+    <div
+      className={cn(
+        "flex items-center justify-between mt-1 sm:mt-0",
+        className
+      )}
+    >
       <div>
         <h1 className="text-2xl font-bold text-theme">{title}</h1>
         {subtitle && <p className="text-theme-muted mt-1">{subtitle}</p>}
