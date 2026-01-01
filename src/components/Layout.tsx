@@ -9,6 +9,7 @@ import {
 import { useStore } from "@/lib/store";
 import { useAppStore } from "@/lib/mode";
 import { useMobileLandscape } from "@/lib/useMobileLandscape";
+import { isRunningAsPWA } from "@/lib/pwa";
 import { Logo } from "./Logo";
 import { InstallPrompt, usePWAInstall } from "./InstallPrompt";
 import { ConnectionOverlay } from "./ConnectionOverlay";
@@ -53,6 +54,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
   const { mode, user, getSelectedDevice } = useAppStore();
   const { isMobile } = usePWAInstall();
   const isMobileLandscape = useMobileLandscape();
+  const isPWA = isRunningAsPWA();
   const [showInstallBanner, setShowInstallBanner] = useState(() => {
     // Check if user previously dismissed the banner
     return localStorage.getItem("brewos-install-dismissed") !== "true";
@@ -242,7 +244,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
 
   // Portrait / Desktop Layout
   return (
-    <div className="full-page-scroll bg-theme">
+    <div className="full-page-scroll bg-theme min-h-[100dvh] pb-[env(safe-area-inset-bottom)]">
       {/* Header - hides on scroll down (mobile only) */}
       <header
         className={cn(
@@ -328,6 +330,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
         >
           <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
             {/* Mobile: evenly distributed icons with labels */}
+            {/* Nav height on mobile: py-1 (0.25rem top + 0.25rem bottom) + icon (1.25rem) + text (~1rem) + gap (0.125rem) = ~2.75rem */}
             <div className="flex sm:hidden justify-around py-1">
               {navigation.map((item) => (
                 <NavLink
@@ -376,7 +379,21 @@ export function Layout({ onExitDemo }: LayoutProps) {
       )}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Add top padding to account for sticky header + nav on mobile/PWA */}
+      {/* Header is 4rem (h-16), Nav is ~2.75rem on mobile (py-1 + icon + text), so we need space for both */}
+      {/* In PWA standalone mode, safe area insets are critical for proper spacing */}
+      <main className={cn(
+        "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+        // Mobile/PWA: account for header (4rem) + nav (~2.75rem) + safe area top
+        // Use more precise calculation: header (4rem) + nav container padding + nav item height
+        isMobile
+          ? "pt-[calc(4rem+env(safe-area-inset-top)+2.75rem)] sm:pt-6"
+          : "pt-6",
+        // Bottom padding with safe area inset (especially important for PWA to prevent bottom gap)
+        isPWA
+          ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+          : "pb-6"
+      )}>
         <Outlet />
       </main>
 
