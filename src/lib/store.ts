@@ -54,6 +54,7 @@ interface OTAStatus {
 interface BrewOSState {
   // Connection
   connectionState: ConnectionState;
+  firstStateReceived: boolean; // Track if we've received first state message (for overlay delay)
 
   // Device identity
   device: DeviceInfo;
@@ -467,6 +468,7 @@ export const useStore = create<BrewOSState>()(
   subscribeWithSelector((set, get) => ({
     // Initial state
     connectionState: "disconnected",
+    firstStateReceived: false,
     device: defaultDevice,
     machine: defaultMachine,
     temps: defaultTemps,
@@ -504,6 +506,7 @@ export const useStore = create<BrewOSState>()(
         if (newState === "disconnected" || newState === "error") {
           return {
             connectionState: newState,
+            firstStateReceived: false, // Reset on disconnect
             machine: {
               ...prevState.machine,
               // Keep the offline state if it was set, otherwise mark as unknown
@@ -534,6 +537,15 @@ export const useStore = create<BrewOSState>()(
           window.location.reload();
         }, 500);
         return; // Don't process this message, we're reloading
+      }
+
+      // Track first state message (status or device_info) for overlay delay
+      const isStateMessage = type === "status" || type === "device_info";
+      if (isStateMessage) {
+        const currentState = get();
+        if (!currentState.firstStateReceived) {
+          set({ firstStateReceived: true });
+        }
       }
 
       switch (type) {

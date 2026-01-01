@@ -19,6 +19,10 @@ const OFFLINE_GRACE_PERIOD_MS = 5000;
 // This ensures we don't flicker if connection drops again quickly
 const HIDE_DELAY_MS = 2000;
 
+// Delay before showing overlay to prevent flicker for fast connections
+// If state arrives within this time, overlay won't be shown
+const SHOW_DELAY_MS = 500;
+
 // Overlay display states
 type OverlayState = "hidden" | "connecting" | "offline" | "updating";
 
@@ -26,6 +30,7 @@ export function ConnectionOverlay() {
   const connectionState = useStore((s) => s.connectionState);
   const machineState = useStore((s) => s.machine.state);
   const ota = useStore((s) => s.ota);
+  const firstStateReceived = useStore((s) => s.firstStateReceived);
   const [retrying, setRetrying] = useState(false);
 
   // Dev bypass preference
@@ -61,6 +66,10 @@ export function ConnectionOverlay() {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Timer for grace period check
   const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Timer for delayed show (to prevent flicker for fast connections)
+  const showTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track if we should show overlay (after delay)
+  const [shouldShow, setShouldShow] = useState(false);
 
   // Track OTA state in localStorage
   useEffect(() => {
@@ -106,6 +115,54 @@ export function ConnectionOverlay() {
     }
   }, [ota.stage, ota.isUpdating, machineState, isConnected]);
 
+  // Handle delayed show logic - don't show overlay if state arrives quickly
+  // OTA always shows immediately (no delay)
+  useEffect(() => {
+    // Clear any pending show timer
+    if (showTimer.current) {
+      clearTimeout(showTimer.current);
+      showTimer.current = null;
+    }
+
+    // OTA always shows immediately - no delay
+    if (isUpdating) {
+      setShouldShow(true);
+      return;
+    }
+
+    // If state has been received and we're connected, don't show overlay
+    if (firstStateReceived && isConnected && !isDeviceOffline) {
+      setShouldShow(false);
+      return;
+    }
+
+    // If we need to show overlay (not connected or device offline), delay it
+    const needsOverlay = !isConnected || isDeviceOffline;
+    
+    if (needsOverlay) {
+      // Delay showing overlay by SHOW_DELAY_MS to prevent flicker for fast connections
+      showTimer.current = setTimeout(() => {
+        // Check again if state was received during delay
+        const state = useStore.getState();
+        if (!state.firstStateReceived) {
+          setShouldShow(true);
+        } else {
+          // State arrived during delay - don't show overlay
+          setShouldShow(false);
+        }
+      }, SHOW_DELAY_MS);
+    } else {
+      setShouldShow(false);
+    }
+
+    return () => {
+      if (showTimer.current) {
+        clearTimeout(showTimer.current);
+        showTimer.current = null;
+      }
+    };
+  }, [isConnected, isDeviceOffline, isUpdating, firstStateReceived]);
+
   // Main state machine - simplified
   useEffect(() => {
     // Clear any pending timers
@@ -116,6 +173,13 @@ export function ConnectionOverlay() {
     if (graceTimer.current) {
       clearTimeout(graceTimer.current);
       graceTimer.current = null;
+    }
+
+    // Don't process state machine if we shouldn't show overlay yet
+    // (OTA is handled separately and always shows)
+    if (!shouldShow) {
+      setOverlayState("hidden");
+      return;
     }
 
     // OTA always takes priority
@@ -187,7 +251,7 @@ export function ConnectionOverlay() {
       if (hideTimer.current) clearTimeout(hideTimer.current);
       if (graceTimer.current) clearTimeout(graceTimer.current);
     };
-  }, [isConnected, isDeviceOffline, isUpdating, overlayState]);
+  }, [isConnected, isDeviceOffline, isUpdating, overlayState, shouldShow]);
 
   // Lock body scroll when overlay is visible
   const isVisible = overlayState !== "hidden";
