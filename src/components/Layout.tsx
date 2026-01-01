@@ -71,8 +71,17 @@ export function Layout({ onExitDemo }: LayoutProps) {
   const scrollThreshold = 10; // Minimum scroll delta to trigger hide/show
 
   useEffect(() => {
-    // Only apply scroll behavior in portrait mode (not landscape)
-    if (isMobileLandscape) return;
+    // Only apply scroll behavior on mobile devices in portrait mode
+    // Desktop should always show header/nav
+    if (!isMobile || isMobileLandscape) return;
+
+    // Initialize scroll position on mount to prevent false hide on load
+    const scrollContainer = document.getElementById("root");
+    if (scrollContainer) {
+      // Ensure header is visible on initial load
+      setHeaderVisible(true);
+      lastScrollY.current = scrollContainer.scrollTop || 0;
+    }
 
     const handleScroll = () => {
       // Use #root as the scroll container (set in index.css)
@@ -80,10 +89,25 @@ export function Layout({ onExitDemo }: LayoutProps) {
       if (!scrollContainer) return;
 
       const currentScrollY = scrollContainer.scrollTop;
+      
+      // Always show header when at top
+      if (currentScrollY <= 0) {
+        setHeaderVisible(true);
+        lastScrollY.current = 0;
+        hasScrolled.current = false; // Reset when back at top
+        return;
+      }
+
+      // Mark that user has scrolled (prevents hiding on initial load quirks)
+      if (!hasScrolled.current && currentScrollY > 0) {
+        hasScrolled.current = true;
+      }
+
       const delta = currentScrollY - lastScrollY.current;
 
-      // Only trigger if scroll delta exceeds threshold
-      if (Math.abs(delta) > scrollThreshold) {
+      // Only trigger if scroll delta exceeds threshold AND user has actually scrolled
+      // This prevents hiding on initial load when scroll position might be non-zero
+      if (Math.abs(delta) > scrollThreshold && hasScrolled.current) {
         if (delta > 0 && currentScrollY > 80) {
           // Scrolling down & past header + nav height - hide
           setHeaderVisible(false);
@@ -102,12 +126,17 @@ export function Layout({ onExitDemo }: LayoutProps) {
       });
       return () => scrollContainer.removeEventListener("scroll", handleScroll);
     }
-  }, [isMobileLandscape]);
+  }, [isMobile, isMobileLandscape]);
 
   // Reset header visibility on route change
   useEffect(() => {
     setHeaderVisible(true);
-    lastScrollY.current = 0;
+    hasScrolled.current = false; // Reset scroll tracking on route change
+    // Reset scroll position tracking on route change
+    const scrollContainer = document.getElementById("root");
+    if (scrollContainer) {
+      lastScrollY.current = scrollContainer.scrollTop || 0;
+    }
   }, [location.pathname]);
 
   const dismissInstallBanner = () => {
@@ -245,12 +274,15 @@ export function Layout({ onExitDemo }: LayoutProps) {
   // Portrait / Desktop Layout
   return (
     <div className="full-page-scroll bg-theme min-h-[100dvh] pb-[env(safe-area-inset-bottom)]">
-      {/* Header - hides on scroll down (mobile only) */}
+      {/* Header - hides on scroll down (mobile portrait only, desktop always visible) */}
       <header
         className={cn(
           "sticky z-50 header-glass border-b border-theme transition-transform duration-300",
           "top-[env(safe-area-inset-top)]",
-          headerVisible ? "translate-y-0" : "-translate-y-full"
+          // Only apply scroll-aware hiding on mobile portrait, desktop always shows
+          isMobile && !isMobileLandscape && !headerVisible 
+            ? "-translate-y-full" 
+            : "translate-y-0"
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -325,7 +357,10 @@ export function Layout({ onExitDemo }: LayoutProps) {
             "sticky z-40 nav-bg border-b border-theme transition-transform duration-300",
             "top-[calc(4rem+env(safe-area-inset-top))]",
             "-mt-px", // Negative margin to eliminate gap from header border
-            headerVisible ? "translate-y-0" : "-translate-y-16"
+            // Only apply scroll-aware hiding on mobile portrait, desktop always shows
+            isMobile && !isMobileLandscape && !headerVisible 
+              ? "-translate-y-16" 
+              : "translate-y-0"
           )}
         >
           <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
