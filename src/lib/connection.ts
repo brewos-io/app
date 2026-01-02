@@ -97,12 +97,9 @@ export class Connection implements IConnection {
     return new Promise((resolve, reject) => {
       try {
         const url = this.buildUrl();
-        console.log(`[BrewOS] Connecting to ${url}`);
-
         this.ws = new WebSocket(url);
 
         this.ws.onopen = () => {
-          console.log("[BrewOS] Connected");
           this.setState("connected");
           this.reconnectDelay = 1000;
           this.lastMessageTime = Date.now();
@@ -112,7 +109,6 @@ export class Connection implements IConnection {
         };
 
         this.ws.onclose = (event) => {
-          console.log(`[BrewOS] Disconnected (code: ${event.code})`);
           this.stopStaleCheck();
           this.setState("disconnected");
           // Reconnect on abnormal close (not 1000) and not auth error (4002)
@@ -140,14 +136,40 @@ export class Connection implements IConnection {
               event.data instanceof Blob
             ) {
               // Binary MessagePack format
-              const buffer =
-                event.data instanceof Blob
-                  ? await event.data.arrayBuffer()
-                  : event.data;
-              message = decode(new Uint8Array(buffer)) as WebSocketMessage;
+              try {
+                const buffer =
+                  event.data instanceof Blob
+                    ? await event.data.arrayBuffer()
+                    : event.data;
+                const uint8Array = new Uint8Array(buffer);
+                message = decode(uint8Array) as WebSocketMessage;
+              } catch (decodeError) {
+                console.error(
+                  `[BrewOS] MessagePack decode failed:`,
+                  decodeError,
+                  `Buffer length: ${
+                    event.data instanceof ArrayBuffer
+                      ? event.data.byteLength
+                      : event.data instanceof Blob
+                      ? event.data.size
+                      : "unknown"
+                  }`
+                );
+                // Don't process invalid messages
+                return;
+              }
             } else {
               // Legacy text/JSON format
-              message = JSON.parse(event.data) as WebSocketMessage;
+              try {
+                message = JSON.parse(event.data) as WebSocketMessage;
+              } catch (parseError) {
+                console.error(
+                  `[BrewOS] JSON parse failed:`,
+                  parseError,
+                  `Data: ${event.data}`
+                );
+                return;
+              }
             }
 
             // Handle internal messages before notifying handlers
@@ -179,9 +201,7 @@ export class Connection implements IConnection {
         this.handleTokenExpiring(message);
         break;
       case "auth_refreshed":
-        if (message.success) {
-          console.log("[BrewOS] Token refreshed successfully");
-        } else {
+        if (!message.success) {
           console.warn("[BrewOS] Token refresh failed:", message.error);
         }
         this.isRefreshingToken = false;
@@ -209,24 +229,21 @@ export class Connection implements IConnection {
         }
         break;
       case "queued_message_sent":
-        console.log(
-          `[BrewOS] Queued message delivered (type: ${message.messageType})`
-        );
+        // Message queued and delivered successfully
         break;
     }
   }
 
   /**
    * Handle token expiring warning from server
+   * @param _message - Token expiring message (unused but required for call signature)
    */
-  private async handleTokenExpiring(message: WebSocketMessage): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async handleTokenExpiring(_message: WebSocketMessage): Promise<void> {
     if (this.isRefreshingToken || !this.tokenRefreshHandler) {
       return;
     }
 
-    console.log(
-      `[BrewOS] Token expiring in ${message.expiresIn}s, refreshing...`
-    );
     this.isRefreshingToken = true;
 
     try {
@@ -393,9 +410,6 @@ export class Connection implements IConnection {
 
     this.setState("reconnecting");
     this.metrics.reconnectCount++;
-    console.log(
-      `[BrewOS] Reconnecting in ${this.reconnectDelay}ms... (attempt ${this.metrics.reconnectCount})`
-    );
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;

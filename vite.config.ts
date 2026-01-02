@@ -172,7 +172,8 @@ export default defineConfig(({ mode, command }) => {
       terserOptions: isEsp32
         ? {
             compress: {
-              drop_console: true,
+              // Keep console.log for debugging - only drop in production releases
+              drop_console: false,
               drop_debugger: true,
             },
           }
