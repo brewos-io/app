@@ -131,10 +131,17 @@ export function ConnectionOverlay() {
       return;
     }
 
-    // If state has been received and we're connected, don't show overlay
+    // If state has been received and we're connected AND device is online, don't show overlay
     // This prevents overlay from showing during normal navigation/state requests
+    // BUT: Always show overlay if device is offline, even if we've received state before
     if (firstStateReceived && isConnected && !isDeviceOffline) {
       setShouldShow(false);
+      return;
+    }
+    
+    // Device is offline - show overlay immediately (no delay needed)
+    if (isDeviceOffline) {
+      setShouldShow(true);
       return;
     }
 
@@ -147,9 +154,14 @@ export function ConnectionOverlay() {
       showTimer.current = setTimeout(() => {
         // Check again if state was received during delay
         const state = useStore.getState();
-        // Only show overlay if we still haven't received state AND we're not connected
-        // This prevents overlay from appearing during normal navigation/state refresh
-        if (!state.firstStateReceived && state.connectionState !== "connected") {
+        // Show overlay if:
+        // 1. We haven't received state AND we're not connected (initial connection)
+        // 2. OR device is offline (even if we've received state before)
+        const shouldShowOverlay = 
+          (!state.firstStateReceived && state.connectionState !== "connected") ||
+          state.machine.state === "offline";
+        
+        if (shouldShowOverlay) {
           setShouldShow(true);
         } else {
           // State arrived during delay or connection restored - don't show overlay
