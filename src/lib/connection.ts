@@ -364,8 +364,14 @@ export class Connection implements IConnection {
       }
 
       // Fallback: use current page URL and convert to wss://
+      // IMPORTANT: Remove fragment identifier (hash) from URL - WebSocket URLs cannot contain fragments
       if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
+        // Build URL without fragment by using origin + pathname + search
+        const url = new URL(
+          window.location.origin +
+            window.location.pathname +
+            window.location.search
+        );
         url.protocol = "wss:"; // Always wss:// for cloud
         url.pathname = "/ws/client";
         url.searchParams.set("token", this.config.authToken || "");
