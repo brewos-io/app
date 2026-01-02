@@ -276,7 +276,11 @@ export function Layout({ onExitDemo }: LayoutProps) {
   // Portrait / Desktop Layout
   return (
     <div className="full-page-scroll bg-theme min-h-[100dvh]">
-      {/* Header - hides on scroll down (mobile portrait only, desktop always visible) */}
+      {/* FIX 1: HEADER POSITION 
+        - top-0: Sticks to the very top edge (behind status bar)
+        - pt-[env...]: Pushes content down so it's not hidden by status bar
+        - h-auto: Allows height to grow with padding
+      */}
       <header
         className={cn(
           "sticky z-50 header-glass border-b border-theme transition-transform duration-300",
@@ -351,8 +355,10 @@ export function Layout({ onExitDemo }: LayoutProps) {
         <VersionWarning />
       </div>
 
-      {/* Navigation - Desktop: horizontal tabs, Mobile: bottom bar style */}
-      {/* Hidden when device is offline */}
+      {/* FIX 2: NAV POSITION
+        Header is 4rem (h-16) + safe-area-inset-top. 
+        So we stick the nav exactly below that.
+      */}
       {!isDeviceOffline && (
         <nav
           className={cn(
@@ -415,13 +421,14 @@ export function Layout({ onExitDemo }: LayoutProps) {
         </nav>
       )}
 
-      {/* Main Content */}
+      {/* FIX 3: MAIN CONTENT PADDING
+        - Removed "pt-[calc(4rem...)]": Sticky headers reserve their own space.
+        - Kept "pb-[...]": Ensures content isn't covered by the home indicator bar.
+      */}
       <main
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-          // Simply use standard top padding
-          "pt-6",
-          // Keep bottom padding logic for PWA
+          "pt-6", // Standard top padding only
           isPWA ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]" : "pb-6"
         )}
       >

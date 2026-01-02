@@ -147,8 +147,10 @@ export function Machines() {
   const isPWA = isRunningAsPWA();
 
   return (
-    <div className="full-page-scroll bg-theme">
-      {/* Header */}
+    <div className="full-page-scroll bg-theme min-h-[100dvh]">
+      {/* FIX 1: Header Position 
+         Always stick to top-0, use padding for safe area 
+      */}
       <header
         className={cn(
           "bg-theme-card border-b border-theme sticky z-50",
@@ -170,15 +172,15 @@ export function Machines() {
         </div>
       </header>
 
-      {/* Content */}
+      {/* FIX 2: Main Padding
+         Removed manual top padding calculation (4rem). 
+         Sticky header already pushes this content down.
+      */}
       <main
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-          // Just use standard top/bottom padding logic
           "pt-6",
-          isPWA
-            ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
-            : "pb-6"
+          isPWA ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]" : "pb-6"
         )}
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
