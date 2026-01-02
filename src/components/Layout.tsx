@@ -69,6 +69,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
   const [headerVisible, setHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
   const hasScrolled = useRef(false); // Track if user has actually scrolled
+  const mainScrollRef = useRef<HTMLDivElement>(null); // Ref for the main scroll container
   const scrollThreshold = 10; // Minimum scroll delta to trigger hide/show
 
   useEffect(() => {
@@ -76,23 +77,21 @@ export function Layout({ onExitDemo }: LayoutProps) {
     // Desktop should always show header/nav
     if (!isMobile || isMobileLandscape) return;
 
-    // Initialize scroll position on mount to prevent false hide on load
-    const scrollContainer = document.getElementById("root");
+    const scrollContainer = mainScrollRef.current;
+
     if (scrollContainer) {
-      // Ensure header is visible on initial load
+      // Ensure header is visible on initial load/mount
       setHeaderVisible(true);
       lastScrollY.current = scrollContainer.scrollTop || 0;
-      hasScrolled.current = false; // Reset on mount
+      hasScrolled.current = false;
     }
 
     const handleScroll = () => {
-      // Use #root as the scroll container (set in index.css)
-      const scrollContainer = document.getElementById("root");
       if (!scrollContainer) return;
 
       const currentScrollY = scrollContainer.scrollTop;
 
-      // Always show header when at top
+      // Always show header when at top (bouncing area included)
       if (currentScrollY <= 0) {
         setHeaderVisible(true);
         lastScrollY.current = 0;
@@ -108,7 +107,6 @@ export function Layout({ onExitDemo }: LayoutProps) {
       const delta = currentScrollY - lastScrollY.current;
 
       // Only trigger if scroll delta exceeds threshold AND user has actually scrolled
-      // This prevents hiding on initial load when scroll position might be non-zero
       if (Math.abs(delta) > scrollThreshold && hasScrolled.current) {
         if (delta > 0 && currentScrollY > 80) {
           // Scrolling down & past header + nav height - hide
@@ -121,7 +119,6 @@ export function Layout({ onExitDemo }: LayoutProps) {
       }
     };
 
-    // Reuse the scrollContainer from above
     if (scrollContainer) {
       scrollContainer.addEventListener("scroll", handleScroll, {
         passive: true,
@@ -135,9 +132,9 @@ export function Layout({ onExitDemo }: LayoutProps) {
     setHeaderVisible(true);
     hasScrolled.current = false; // Reset scroll tracking on route change
     // Reset scroll position tracking on route change
-    const scrollContainer = document.getElementById("root");
-    if (scrollContainer) {
-      lastScrollY.current = scrollContainer.scrollTop || 0;
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0;
+      lastScrollY.current = 0;
     }
   }, [location.pathname]);
 
@@ -284,14 +281,16 @@ export function Layout({ onExitDemo }: LayoutProps) {
   );
 
   return (
+    // FIX #2: Use fixed inset-0 to force container to fit viewport exactly.
+    // This resolves iOS PWA "bottom gap" and overscroll issues.
     <div
+      ref={mainScrollRef}
       className={cn(
-        "full-page-scroll bg-theme",
-        // Use 100dvh to fill viewport, min-h allows content to grow if needed
-        "min-h-[100dvh]"
+        "fixed inset-0 overflow-y-auto overflow-x-hidden bg-theme"
+        // Using 'fixed' creates a new stacking context and defines the viewport
+        // exactly, preventing body-height mismatch issues on iOS.
       )}
     >
-      {/* Render the status bar curtain */}
       <StatusBarCurtain />
 
       {/* 2. UPDATE HEADER: 
@@ -299,15 +298,13 @@ export function Layout({ onExitDemo }: LayoutProps) {
           - Keep pt-[env...] to push content down below the status bar
           - The curtain covers the gap visually
       */}
+      {/* Header */}
       <header
         className={cn(
-          "sticky z-50 header-glass border-b border-theme transition-transform duration-300",
-          // Stick to top-0 so it sits under the status bar curtain initially
+          "sticky z-50 header-glass border-b border-theme transition-transform duration-300 ease-in-out",
           "top-0",
-          // Add padding so the actual content starts BELOW the status bar
           "pt-[env(safe-area-inset-top)]",
-          // Only apply scroll-aware hiding on mobile portrait, desktop always shows
-          // When hiding, translate by the full height (100% includes padding for sticky elements)
+          // Only hide on mobile portrait
           isMobile && !isMobileLandscape && !headerVisible
             ? "-translate-y-full"
             : "translate-y-0"
@@ -377,26 +374,21 @@ export function Layout({ onExitDemo }: LayoutProps) {
         <VersionWarning />
       </div>
 
-      {/* 3. UPDATE NAV: 
-          - When header hides, nav moves to top position to eliminate gap
-          - Ensure seamless connection to status bar curtain
-      */}
+      {/* Navigation */}
       {!isDeviceOffline && (
         <nav
+          // FIX #1: Gap Removal Logic
+          // 1. We keep '-mt-px' in BOTH states to ensuring constant border overlap.
+          // 2. We use specific calc() for exact positioning relative to the sticky header.
           className={cn(
-            "sticky z-40 nav-bg border-b border-theme transition-all duration-300",
-            // When header is visible: position below header (4rem) + status bar, overlap border
-            // When header is hidden: position exactly at status bar level (no gap)
+            "sticky z-40 nav-bg border-b border-theme transition-all duration-300 ease-in-out",
+            // Always pull up by 1px to prevent sub-pixel gaps
+            "-mt-px",
+            // Conditional sticky positioning
             isMobile && !isMobileLandscape && !headerVisible
-              ? "top-[env(safe-area-inset-top)]"
-              : "top-[calc(4rem+env(safe-area-inset-top))] -mt-px"
+              ? "top-[env(safe-area-inset-top)]" // Stick to top safe area when header is gone
+              : "top-[calc(4rem+env(safe-area-inset-top))]" // Stick below header (16 + safe area)
           )}
-          style={
-            // Ensure nav sits flush with status bar curtain when header is hidden
-            isMobile && !isMobileLandscape && !headerVisible
-              ? { marginTop: 0 }
-              : undefined
-          }
         >
           <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
             {/* Mobile: evenly distributed icons with labels */}
@@ -448,16 +440,13 @@ export function Layout({ onExitDemo }: LayoutProps) {
         </nav>
       )}
 
-      {/* 4. UPDATE MAIN: 
-          - Remove top padding calculation (sticky headers handle space)
-          - Ensure bottom padding is sufficient for home indicator
-      */}
+      {/* Main Content */}
       <main
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
           "pt-6",
-          // Ensure we have enough bottom padding for the home indicator
-          isPWA ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]" : "pb-6"
+          // Extra padding at bottom for Home Indicator (PWA) or simple spacing
+          isPWA ? "pb-[calc(2rem+env(safe-area-inset-bottom))]" : "pb-6"
         )}
       >
         <Outlet />
