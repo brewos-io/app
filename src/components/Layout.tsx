@@ -275,7 +275,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
 
   // Portrait / Desktop Layout
   return (
-    <div className="full-page-scroll bg-theme min-h-[100dvh] pb-[env(safe-area-inset-bottom)]">
+    <div className="full-page-scroll bg-theme min-h-[100dvh]">
       {/* Header - hides on scroll down (mobile portrait only, desktop always visible) */}
       <header
         className={cn(
@@ -419,17 +419,16 @@ export function Layout({ onExitDemo }: LayoutProps) {
       {/* Add top padding to account for sticky header + nav on mobile/PWA */}
       {/* Header is 4rem (h-16), Nav is ~2.75rem on mobile (py-1 + icon + text), so we need space for both */}
       {/* In PWA standalone mode, safe area insets are critical for proper spacing */}
+      {/* Note: Header already accounts for safe-area-inset-top, so we don't add it again here */}
       <main
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-          // Mobile web: header (4rem = 64px) + nav (~2.75rem = 44px) = ~6.75rem = 108px
-          // Reduce padding significantly since browser UI and borders provide spacing
-          // Mobile PWA: add safe area inset on top for notch/status bar
-          // Desktop: standard padding
+          // Mobile PWA: header (4rem) + nav (2.75rem) = 6.75rem, but header already has safe-area-inset-top
+          // So we only add the header + nav height, not the safe area inset again
           isMobile && isPWA
-            ? "pt-[calc(4rem+env(safe-area-inset-top)+2.75rem)] sm:pt-6"
+            ? "pt-[calc(4rem+2.75rem)] sm:pt-6"
             : isMobile
-            ? "pt-6 sm:pt-6" // 5rem = 80px (reduced to minimize gap between nav and content)
+            ? "pt-[calc(4rem+2.75rem)] sm:pt-6" // Account for sticky header + nav
             : "pt-6",
           // Bottom padding with safe area inset (especially important for PWA to prevent bottom gap)
           isPWA ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]" : "pb-6"

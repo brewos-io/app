@@ -24,6 +24,8 @@ import {
 import { UserMenu } from "@/components/UserMenu";
 import { DeviceUsers } from "@/components/DeviceUsers";
 import { ShareDevice } from "@/components/ShareDevice";
+import { isRunningAsPWA } from "@/lib/pwa";
+import { cn } from "@/lib/utils";
 
 // Demo data
 const DEMO_USER = {
@@ -142,10 +144,17 @@ export function Machines() {
     return <Loading />;
   }
 
+  const isPWA = isRunningAsPWA();
+
   return (
     <div className="full-page-scroll bg-theme">
       {/* Header */}
-      <header className="bg-theme-card border-b border-theme sticky top-0 z-50">
+      <header
+        className={cn(
+          "bg-theme-card border-b border-theme sticky z-50",
+          isPWA ? "top-[env(safe-area-inset-top)]" : "top-0"
+        )}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
@@ -162,7 +171,16 @@ export function Machines() {
       </header>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main
+        className={cn(
+          "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+          // Add top padding to account for sticky header
+          // Header height is approximately 3.5rem (py-3 + content), but use 4rem for safety
+          isPWA
+            ? "pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+            : "pt-[4rem] pb-6"
+        )}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl sm:text-3xl font-bold text-theme mb-1">
