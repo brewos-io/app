@@ -8,9 +8,10 @@ type TokenRefreshHandler = () => Promise<string | null>;
 /**
  * Stale connection threshold in milliseconds.
  * If no message is received within this time, the connection is considered stale.
- * Status updates are sent every 500ms, so 3 seconds gives ~6 missed updates before marking stale.
+ * Status updates are sent every 500ms, so 5 seconds gives ~10 missed updates before marking stale.
+ * Increased from 3s to 5s to be more tolerant of temporary network delays or server load.
  */
-const STALE_THRESHOLD_MS = 3000;
+const STALE_THRESHOLD_MS = 5000;
 
 /**
  * How often to check for stale connections.
