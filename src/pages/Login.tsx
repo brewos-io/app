@@ -108,9 +108,9 @@ export function Login() {
           isMobileLandscape
             ? "px-3"
             : "px-4 sm:px-6 lg:px-8 min-h-[100dvh] lg:min-h-0",
-          // Add safe area padding for PWA
-          "pt-[calc(1rem+env(safe-area-inset-top))]",
-          "pb-[calc(1rem+env(safe-area-inset-bottom))]"
+          // Extra top/bottom padding for PWA safe areas
+          "pt-[calc(2rem+env(safe-area-inset-top))]",
+          "pb-[calc(2rem+env(safe-area-inset-bottom))]"
         )}
       >
         {/* Subtle decorative elements - hidden in mobile landscape */}

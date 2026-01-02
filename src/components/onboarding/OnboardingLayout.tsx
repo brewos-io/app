@@ -101,8 +101,8 @@ export function OnboardingLayout({
         className={cn(
           gradient,
           "min-h-[100dvh] flex flex-col px-4",
-          // Add safe area padding explicitly
-          "pt-[calc(0.5rem+env(safe-area-inset-top))]",
+          // Fix margins/padding for PWA
+          "pt-[calc(1rem+env(safe-area-inset-top))]",
           "pb-[calc(1rem+env(safe-area-inset-bottom))]"
         )}
         style={darkBgStyles}

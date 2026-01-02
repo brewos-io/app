@@ -274,17 +274,32 @@ export function Layout({ onExitDemo }: LayoutProps) {
   }
 
   // Portrait / Desktop Layout
+  // Status Bar Curtain: Fixed element that covers the status bar area
+  // This ensures content never scrolls behind the clock/battery icons
+  const StatusBarCurtain = () => (
+    <div 
+      className="fixed top-0 left-0 right-0 z-[60] header-glass border-b-0"
+      style={{ height: 'env(safe-area-inset-top)' }}
+    />
+  );
+
   return (
     <div className="full-page-scroll bg-theme min-h-[100dvh]">
-      {/* FIX 1: HEADER POSITION 
-        - top-0: Sticks to the very top edge (behind status bar)
-        - pt-[env...]: Pushes content down so it's not hidden by status bar
-        - h-auto: Allows height to grow with padding
+      {/* Render the status bar curtain */}
+      <StatusBarCurtain />
+
+      {/* 2. UPDATE HEADER: 
+          - Stick to top-0
+          - Keep pt-[env...] to push content down below the status bar
+          - The curtain covers the gap visually
       */}
       <header
         className={cn(
           "sticky z-50 header-glass border-b border-theme transition-transform duration-300",
-          "top-0 pt-[env(safe-area-inset-top)]",
+          // Stick to top-0 so it sits under the status bar curtain initially
+          "top-0",
+          // Add padding so the actual content starts BELOW the status bar
+          "pt-[env(safe-area-inset-top)]",
           // Only apply scroll-aware hiding on mobile portrait, desktop always shows
           isMobile && !isMobileLandscape && !headerVisible
             ? "-translate-y-full"
@@ -355,18 +370,20 @@ export function Layout({ onExitDemo }: LayoutProps) {
         <VersionWarning />
       </div>
 
-      {/* FIX 2: NAV POSITION
-        Header is 4rem (h-16) + safe-area-inset-top. 
-        So we stick the nav exactly below that.
+      {/* 3. UPDATE NAV: 
+          - Logic remains similar, just ensure z-index puts it below header/curtain if needed
+          - When header hides (translate -100%), nav moves up to touch the status bar curtain
       */}
       {!isDeviceOffline && (
         <nav
           className={cn(
             "sticky z-40 nav-bg border-b border-theme transition-transform duration-300",
+            // Position it below the header (4rem) + status bar
             "top-[calc(4rem+env(safe-area-inset-top))]",
-            "-mt-px", // Negative margin to eliminate gap from header border
+            "-mt-px",
             // Only apply scroll-aware hiding on mobile portrait, desktop always shows
             isMobile && !isMobileLandscape && !headerVisible
+              // When header hides (translate -100%), nav moves up to touch the status bar curtain
               ? "-translate-y-16"
               : "translate-y-0"
           )}
@@ -421,14 +438,15 @@ export function Layout({ onExitDemo }: LayoutProps) {
         </nav>
       )}
 
-      {/* FIX 3: MAIN CONTENT PADDING
-        - Removed "pt-[calc(4rem...)]": Sticky headers reserve their own space.
-        - Kept "pb-[...]": Ensures content isn't covered by the home indicator bar.
+      {/* 4. UPDATE MAIN: 
+          - Remove top padding calculation (sticky headers handle space)
+          - Ensure bottom padding is sufficient
       */}
       <main
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-          "pt-6", // Standard top padding only
+          "pt-6", 
+          // Ensure we have enough bottom padding for the home indicator
           isPWA ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]" : "pb-6"
         )}
       >
