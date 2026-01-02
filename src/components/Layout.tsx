@@ -270,55 +270,46 @@ export function Layout({ onExitDemo }: LayoutProps) {
     );
   }
 
-  // Portrait / Desktop Layout
-  // Status Bar Curtain: Fixed element that covers the status bar area
-  // This ensures content never scrolls behind the clock/battery icons
-  const StatusBarCurtain = () => (
-    <div
-      className="fixed top-0 left-0 right-0 z-[60] header-glass border-b-0"
-      style={{ height: "env(safe-area-inset-top)" }}
-    />
-  );
-
+  // PORTRAIT / DESKTOP LAYOUT
   return (
-    // FIX #2: Use fixed inset-0 to force container to fit viewport exactly.
-    // This resolves iOS PWA "bottom gap" and overscroll issues.
     <div
       ref={mainScrollRef}
       className={cn(
-        "fixed inset-0 overflow-y-auto overflow-x-hidden bg-theme"
-        // Using 'fixed' creates a new stacking context and defines the viewport
-        // exactly, preventing body-height mismatch issues on iOS.
+        // FIX #1: Full Viewport Constraint
+        // Use flex column to ensure content stretches
+        "fixed inset-0 flex flex-col overflow-y-auto overflow-x-hidden bg-theme",
+        // Force the container to handle scrolling for proper sticky behavior
+        "scroll-smooth"
       )}
     >
-      <StatusBarCurtain />
-
-      {/* 2. UPDATE HEADER: 
-          - Stick to top-0
-          - Keep pt-[env...] to push content down below the status bar
-          - The curtain covers the gap visually
+      {/* FIX #2: Unified Sticky Container
+         Wraps Curtain, Header, and Nav into ONE sticky element.
+         This eliminates the gap between Header and Nav during scroll.
       */}
-      {/* Header */}
-      <header
-        className={cn(
-          "sticky z-50 header-glass border-b border-theme transition-transform duration-300 ease-in-out",
-          "top-0",
-          "pt-[env(safe-area-inset-top)]",
-          // Only hide on mobile portrait
-          isMobile && !isMobileLandscape && !headerVisible
-            ? "-translate-y-full"
-            : "translate-y-0"
-        )}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <div className="sticky top-0 z-50 flex flex-col header-glass border-b border-theme">
+        {/* Safe Area Spacer (Visual Curtain) */}
+        <div
+          className="w-full"
+          style={{ height: "env(safe-area-inset-top)" }}
+        />
+
+        {/* Header Section */}
+        <header
+          className={cn(
+            "w-full transition-all duration-300 ease-in-out overflow-hidden",
+            // Logic: Collapse height via negative margin to slide up smoothly
+            // We use mt instead of transform so the Nav (below) naturally slides up to fill the space
+            isMobile && !isMobileLandscape && !headerVisible
+              ? "-mt-16 opacity-0 pointer-events-none" // -mt-16 matches h-16
+              : "mt-0 opacity-100"
+          )}
+        >
+          <div className="h-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
             {/* Logo & Mode */}
             <div className="flex items-center gap-4">
-              {/* Hide full logo on very small screens, show icon only */}
               <Logo size="md" className="hidden xs:flex" />
               <Logo size="md" iconOnly className="xs:hidden" />
 
-              {/* Cloud: Clickable machine indicator with real-time status */}
               {isCloud && selectedDevice && (
                 <Link
                   to="/machines"
@@ -336,7 +327,6 @@ export function Layout({ onExitDemo }: LayoutProps) {
                 </Link>
               )}
 
-              {/* Local: Machine Name */}
               {!isCloud && deviceName && (
                 <span className="hidden sm:block text-sm font-medium text-theme-secondary">
                   {deviceName}
@@ -344,21 +334,81 @@ export function Layout({ onExitDemo }: LayoutProps) {
               )}
             </div>
 
-            {/* Right side */}
             <div className="flex items-center gap-2 xs:gap-3">
-              {/* Machine Status Icons */}
               <StatusBar />
-
-              {/* User menu - Cloud mode or Demo mode */}
               {(isCloud && user) || isDemo ? (
                 <UserMenu onExitDemo={onExitDemo} />
               ) : null}
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Install App Banner - shown to mobile users only, not in demo mode */}
+        {/* Separator line (optional, but good for visual clarity when header hides) */}
+        <div
+          className={cn(
+            "w-full h-px bg-theme transition-opacity",
+            isMobile && !isMobileLandscape && !headerVisible
+              ? "opacity-0"
+              : "opacity-100"
+          )}
+        />
+
+        {/* Navigation Section */}
+        {/* This sits naturally inside the sticky container, so it pulls up automatically when header hides */}
+        {!isDeviceOffline && (
+          <nav className="w-full nav-bg border-b border-theme">
+            <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+              {/* Mobile Nav */}
+              <div className="flex sm:hidden justify-around py-1">
+                {navigation.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    end={
+                      item.href === "/" ||
+                      item.href.endsWith(`/${deviceId || selectedDevice?.id}`)
+                    }
+                    className={({ isActive }) =>
+                      cn(
+                        "flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all min-w-0 flex-1 max-w-20",
+                        isActive ? "nav-active" : "nav-inactive"
+                      )
+                    }
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="truncate">{item.name}</span>
+                  </NavLink>
+                ))}
+              </div>
+
+              {/* Desktop Nav */}
+              <div className="hidden sm:flex gap-1 py-2">
+                {navigation.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    end={
+                      item.href === "/" ||
+                      item.href.endsWith(`/${deviceId || selectedDevice?.id}`)
+                    }
+                    className={({ isActive }) =>
+                      cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all",
+                        isActive ? "nav-active" : "nav-inactive"
+                      )
+                    }
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span>{item.name}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          </nav>
+        )}
+      </div>
+
+      {/* Install Banner */}
       {showInstallBanner && isMobile && !isDemo && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <InstallPrompt
@@ -369,83 +419,19 @@ export function Layout({ onExitDemo }: LayoutProps) {
         </div>
       )}
 
-      {/* Version Compatibility Warning - shown if backend/firmware version mismatch */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <VersionWarning />
       </div>
 
-      {/* Navigation */}
-      {!isDeviceOffline && (
-        <nav
-          // FIX #1: Gap Removal Logic
-          // 1. We keep '-mt-px' in BOTH states to ensuring constant border overlap.
-          // 2. We use specific calc() for exact positioning relative to the sticky header.
-          className={cn(
-            "sticky z-40 nav-bg border-b border-theme transition-all duration-300 ease-in-out",
-            // Always pull up by 1px to prevent sub-pixel gaps
-            "-mt-px",
-            // Conditional sticky positioning
-            isMobile && !isMobileLandscape && !headerVisible
-              ? "top-[env(safe-area-inset-top)]" // Stick to top safe area when header is gone
-              : "top-[calc(4rem+env(safe-area-inset-top))]" // Stick below header (16 + safe area)
-          )}
-        >
-          <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-            {/* Mobile: evenly distributed icons with labels */}
-            {/* Nav height on mobile: py-1 (0.25rem top + 0.25rem bottom) + icon (1.25rem) + text (~1rem) + gap (0.125rem) = ~2.75rem */}
-            <div className="flex sm:hidden justify-around py-1">
-              {navigation.map((item) => (
-                <NavLink
-                  key={item.name}
-                  to={item.href}
-                  end={
-                    item.href === "/" ||
-                    item.href.endsWith(`/${deviceId || selectedDevice?.id}`)
-                  }
-                  className={({ isActive }) =>
-                    cn(
-                      "flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all min-w-0 flex-1 max-w-20",
-                      isActive ? "nav-active" : "nav-inactive"
-                    )
-                  }
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="truncate">{item.name}</span>
-                </NavLink>
-              ))}
-            </div>
-            {/* Desktop: horizontal tabs with full labels */}
-            <div className="hidden sm:flex gap-1 py-2">
-              {navigation.map((item) => (
-                <NavLink
-                  key={item.name}
-                  to={item.href}
-                  end={
-                    item.href === "/" ||
-                    item.href.endsWith(`/${deviceId || selectedDevice?.id}`)
-                  }
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all",
-                      isActive ? "nav-active" : "nav-inactive"
-                    )
-                  }
-                >
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.name}</span>
-                </NavLink>
-              ))}
-            </div>
-          </div>
-        </nav>
-      )}
-
       {/* Main Content */}
       <main
         className={cn(
-          "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+          "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full",
           "pt-6",
-          // Extra padding at bottom for Home Indicator (PWA) or simple spacing
+          // FIX #3: Flex Grow
+          // Ensure main grows to fill space, pushing any bottom gaps down/away
+          "flex-1",
+          // Consistent bottom padding for PWA home indicator
           isPWA ? "pb-[calc(2rem+env(safe-area-inset-bottom))]" : "pb-6"
         )}
       >
