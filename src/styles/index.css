@@ -3,13 +3,16 @@
 @tailwind utilities;
 
 /* iOS Safari viewport fix - prevent overscroll bounce and white gaps */
+/* Use 100dvh for PWA to properly account for safe areas and prevent bottom gap */
 html, body {
   height: 100%;
+  height: 100dvh; /* Use dvh for PWA to fix bottom gap issue */
   overflow: hidden;
 }
 
 #root {
   height: 100%;
+  height: 100dvh; /* Use dvh for PWA to fix bottom gap issue */
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;

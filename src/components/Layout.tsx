@@ -372,20 +372,18 @@ export function Layout({ onExitDemo }: LayoutProps) {
 
       {/* 3. UPDATE NAV: 
           - Logic remains similar, just ensure z-index puts it below header/curtain if needed
-          - When header hides (translate -100%), nav moves up to touch the status bar curtain
+          - When header hides, nav moves to top position instead of just translating
       */}
       {!isDeviceOffline && (
         <nav
           className={cn(
-            "sticky z-40 nav-bg border-b border-theme transition-transform duration-300",
-            // Position it below the header (4rem) + status bar
-            "top-[calc(4rem+env(safe-area-inset-top))]",
-            "-mt-px",
-            // Only apply scroll-aware hiding on mobile portrait, desktop always shows
+            "sticky z-40 nav-bg border-b border-theme transition-all duration-300",
+            // When header is visible: position below header (4rem) + status bar
+            // When header is hidden: position at status bar level
             isMobile && !isMobileLandscape && !headerVisible
-              // When header hides (translate -100%), nav moves up to touch the status bar curtain
-              ? "-translate-y-16"
-              : "translate-y-0"
+              ? "top-[env(safe-area-inset-top)]"
+              : "top-[calc(4rem+env(safe-area-inset-top))]",
+            "-mt-px"
           )}
         >
           <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
