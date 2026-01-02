@@ -60,6 +60,7 @@ export type MessageType =
   | "token_expiring" // Access token expiring soon, client should refresh
   | "auth_refreshed" // Auth token refresh result
   | "pong" // Application-level ping response
+  | "keepalive" // Server keepalive message (when idle, no status changes)
   | "metrics" // Connection quality metrics
   | "queued_message_sent"; // Notification that a queued message was delivered
 
