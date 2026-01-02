@@ -152,7 +152,7 @@ export function Machines() {
       <header
         className={cn(
           "bg-theme-card border-b border-theme sticky z-50",
-          isPWA ? "top-[env(safe-area-inset-top)]" : "top-0"
+          "top-0 pt-[env(safe-area-inset-top)]"
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
@@ -174,11 +174,11 @@ export function Machines() {
       <main
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-          // Add top padding to account for sticky header
-          // Header height is approximately 3.5rem (py-3 + content), but use 4rem for safety
+          // Just use standard top/bottom padding logic
+          "pt-6",
           isPWA
-            ? "pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
-            : "pt-[4rem] pb-6"
+            ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+            : "pb-6"
         )}
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">

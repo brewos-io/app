@@ -1,5 +1,6 @@
 import { Card } from "@/components/Card";
 import { darkBgStyles } from "@/lib/darkBgStyles";
+import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 import { useState, useEffect } from "react";
 
@@ -97,7 +98,13 @@ export function OnboardingLayout({
   return (
     <div className="min-h-[100dvh]">
       <div
-        className={`${gradient} min-h-[100dvh] flex flex-col px-4 pt-2 pb-4 safe-area-inset`}
+        className={cn(
+          gradient,
+          "min-h-[100dvh] flex flex-col px-4",
+          // Add safe area padding explicitly
+          "pt-[calc(0.5rem+env(safe-area-inset-top))]",
+          "pb-[calc(1rem+env(safe-area-inset-bottom))]"
+        )}
         style={darkBgStyles}
       >
         <div className="flex-1 flex flex-col overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-500">

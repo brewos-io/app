@@ -7,6 +7,7 @@ import { isGoogleAuthConfigured } from "@/lib/auth";
 import { useThemeStore } from "@/lib/themeStore";
 import { ChevronRight } from "lucide-react";
 import { LoginHero, LoginForm } from "@/components/login";
+import { cn } from "@/lib/utils";
 
 export function Login() {
   const navigate = useNavigate();
@@ -102,11 +103,15 @@ export function Login() {
 
       {/* Right Panel - Login Form */}
       <div
-        className={`flex-1 lg:w-1/2 xl:w-[45%] flex items-center justify-center bg-theme relative ${
+        className={cn(
+          "flex-1 lg:w-1/2 xl:w-[45%] flex items-center justify-center bg-theme relative overflow-y-auto",
           isMobileLandscape
-            ? "p-3 overflow-y-auto"
-            : "p-4 sm:p-6 lg:p-8 overflow-y-auto min-h-[100dvh] lg:min-h-0"
-        }`}
+            ? "px-3"
+            : "px-4 sm:px-6 lg:px-8 min-h-[100dvh] lg:min-h-0",
+          // Add safe area padding for PWA
+          "pt-[calc(1rem+env(safe-area-inset-top))]",
+          "pb-[calc(1rem+env(safe-area-inset-bottom))]"
+        )}
       >
         {/* Subtle decorative elements - hidden in mobile landscape */}
         {!isMobileLandscape && (
