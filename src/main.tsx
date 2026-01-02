@@ -16,7 +16,7 @@ import "./lib/dev-mode";
 // Initialize demo mode detection early (checks ?demo=true in URL)
 // This MUST happen before React mounts to ensure localStorage is set
 // before App component evaluates isDemoMode()
-import { initDemoModeFromUrl } from "./lib/demo-mode";
+import { initDemoModeFromUrl, isDemoMode } from "./lib/demo-mode";
 initDemoModeFromUrl();
 
 // Google Analytics - only in production
@@ -38,8 +38,8 @@ if (import.meta.env.PROD) {
   window.gtag("config", GA_MEASUREMENT_ID);
 }
 
-// Register service worker for PWA
-if ("serviceWorker" in navigator) {
+// Register service worker for PWA (skip in demo mode to avoid update checks/reloads)
+if ("serviceWorker" in navigator && !isDemoMode()) {
   window.addEventListener("load", () => {
     registerServiceWorker().catch((error) => {
       console.error("Failed to register service worker:", error);

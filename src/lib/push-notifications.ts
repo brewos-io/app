@@ -207,9 +207,21 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     });
 
     // Handle controller change (new SW activated)
+    // Skip auto-reload in demo mode to avoid disrupting the demo experience
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (refreshing) return;
+      
+      // Check if we're in demo mode - if so, don't auto-reload
+      const isDemo = typeof window !== 'undefined' && 
+        (localStorage.getItem('brewos-demo-mode') === 'true' || 
+         new URLSearchParams(window.location.search).get('demo') === 'true');
+      
+      if (isDemo) {
+        console.log('[PWA] New service worker activated in demo mode, skipping auto-reload');
+        return;
+      }
+      
       refreshing = true;
       console.log('[PWA] New service worker activated, reloading...');
       window.location.reload();

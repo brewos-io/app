@@ -277,14 +277,20 @@ export function Layout({ onExitDemo }: LayoutProps) {
   // Status Bar Curtain: Fixed element that covers the status bar area
   // This ensures content never scrolls behind the clock/battery icons
   const StatusBarCurtain = () => (
-    <div 
+    <div
       className="fixed top-0 left-0 right-0 z-[60] header-glass border-b-0"
-      style={{ height: 'env(safe-area-inset-top)' }}
+      style={{ height: "env(safe-area-inset-top)" }}
     />
   );
 
   return (
-    <div className="full-page-scroll bg-theme min-h-[100dvh]">
+    <div
+      className={cn(
+        "full-page-scroll bg-theme",
+        // Use 100dvh to fill viewport, min-h allows content to grow if needed
+        "min-h-[100dvh]"
+      )}
+    >
       {/* Render the status bar curtain */}
       <StatusBarCurtain />
 
@@ -301,6 +307,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
           // Add padding so the actual content starts BELOW the status bar
           "pt-[env(safe-area-inset-top)]",
           // Only apply scroll-aware hiding on mobile portrait, desktop always shows
+          // When hiding, translate by the full height (100% includes padding for sticky elements)
           isMobile && !isMobileLandscape && !headerVisible
             ? "-translate-y-full"
             : "translate-y-0"
@@ -371,20 +378,25 @@ export function Layout({ onExitDemo }: LayoutProps) {
       </div>
 
       {/* 3. UPDATE NAV: 
-          - Logic remains similar, just ensure z-index puts it below header/curtain if needed
-          - When header hides, nav moves to top position instead of just translating
+          - When header hides, nav moves to top position to eliminate gap
+          - Ensure seamless connection to status bar curtain
       */}
       {!isDeviceOffline && (
         <nav
           className={cn(
             "sticky z-40 nav-bg border-b border-theme transition-all duration-300",
-            // When header is visible: position below header (4rem) + status bar
-            // When header is hidden: position at status bar level
+            // When header is visible: position below header (4rem) + status bar, overlap border
+            // When header is hidden: position exactly at status bar level (no gap)
             isMobile && !isMobileLandscape && !headerVisible
               ? "top-[env(safe-area-inset-top)]"
-              : "top-[calc(4rem+env(safe-area-inset-top))]",
-            "-mt-px"
+              : "top-[calc(4rem+env(safe-area-inset-top))] -mt-px"
           )}
+          style={
+            // Ensure nav sits flush with status bar curtain when header is hidden
+            isMobile && !isMobileLandscape && !headerVisible
+              ? { marginTop: 0 }
+              : undefined
+          }
         >
           <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
             {/* Mobile: evenly distributed icons with labels */}
@@ -438,12 +450,12 @@ export function Layout({ onExitDemo }: LayoutProps) {
 
       {/* 4. UPDATE MAIN: 
           - Remove top padding calculation (sticky headers handle space)
-          - Ensure bottom padding is sufficient
+          - Ensure bottom padding is sufficient for home indicator
       */}
       <main
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-          "pt-6", 
+          "pt-6",
           // Ensure we have enough bottom padding for the home indicator
           isPWA ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]" : "pb-6"
         )}

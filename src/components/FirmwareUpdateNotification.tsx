@@ -17,6 +17,7 @@ import {
   getFirmwareUpdateNotificationEnabled,
 } from "@/lib/firmware-update-checker";
 import { useNavigate } from "react-router-dom";
+import { isDemoMode } from "@/lib/demo-mode";
 
 interface PendingUpdate {
   version: string;
@@ -30,6 +31,7 @@ export function FirmwareUpdateNotification() {
   const machineState = useStore((s) => s.machine.state);
   const connectionState = useStore((s) => s.connectionState);
   const navigate = useNavigate();
+  const isDemo = isDemoMode();
   
   // Don't show firmware update notification when machine is offline or not connected
   const isOfflineOrDisconnected = machineState === "offline" || connectionState !== "connected";
@@ -46,8 +48,9 @@ export function FirmwareUpdateNotification() {
   }, []);
 
   // Start the update checker when we have a version (and notifications enabled)
+  // Skip in demo mode to avoid showing update notifications for mock firmware
   useEffect(() => {
-    if (!esp32Version) return;
+    if (!esp32Version || isDemo) return;
 
     // Add version to DOM for the checker to read
     document.body.setAttribute("data-firmware-version", esp32Version);
@@ -59,7 +62,7 @@ export function FirmwareUpdateNotification() {
       stopFirmwareUpdateChecker();
       document.body.removeAttribute("data-firmware-version");
     };
-  }, [esp32Version]);
+  }, [esp32Version, isDemo]);
 
   // Clear pending notification if notifications get disabled
   useEffect(() => {
@@ -77,8 +80,8 @@ export function FirmwareUpdateNotification() {
     setDismissed(true);
   }, []);
 
-  // Don't render if no update, dismissed, or machine is offline/disconnected
-  if (!pendingUpdate || dismissed || isOfflineOrDisconnected) {
+  // Don't render if no update, dismissed, machine is offline/disconnected, or in demo mode
+  if (!pendingUpdate || dismissed || isOfflineOrDisconnected || isDemo) {
     return null;
   }
 

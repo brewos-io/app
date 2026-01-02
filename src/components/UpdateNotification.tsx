@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { RefreshCw, X } from "lucide-react";
 import { setUpdateCallback, activateNewServiceWorker, checkForServiceWorkerUpdate } from "@/lib/push-notifications";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export function UpdateNotification() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const isDemo = isDemoMode();
 
   useEffect(() => {
+    // Skip service worker update checks in demo mode
+    if (isDemo) return;
+
     // Register callback for when new version is available
     setUpdateCallback(() => {
       setUpdateAvailable(true);
@@ -15,7 +20,7 @@ export function UpdateNotification() {
     
     // Also check for updates when component mounts (in case one is already waiting)
     checkForServiceWorkerUpdate();
-  }, []);
+  }, [isDemo]);
 
   const handleUpdate = () => {
     // Tell SW to skip waiting and activate
@@ -27,7 +32,8 @@ export function UpdateNotification() {
     setDismissed(true);
   };
 
-  if (!updateAvailable || dismissed) {
+  // Don't show update notification in demo mode
+  if (!updateAvailable || dismissed || isDemo) {
     return null;
   }
 
