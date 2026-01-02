@@ -68,6 +68,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
   // Scroll-aware header visibility (portrait mode only)
   const [headerVisible, setHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
+  const hasScrolled = useRef(false); // Track if user has actually scrolled
   const scrollThreshold = 10; // Minimum scroll delta to trigger hide/show
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
       // Ensure header is visible on initial load
       setHeaderVisible(true);
       lastScrollY.current = scrollContainer.scrollTop || 0;
+      hasScrolled.current = false; // Reset on mount
     }
 
     const handleScroll = () => {
@@ -89,7 +91,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
       if (!scrollContainer) return;
 
       const currentScrollY = scrollContainer.scrollTop;
-      
+
       // Always show header when at top
       if (currentScrollY <= 0) {
         setHeaderVisible(true);
@@ -119,7 +121,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
       }
     };
 
-    const scrollContainer = document.getElementById("root");
+    // Reuse the scrollContainer from above
     if (scrollContainer) {
       scrollContainer.addEventListener("scroll", handleScroll, {
         passive: true,
@@ -280,8 +282,8 @@ export function Layout({ onExitDemo }: LayoutProps) {
           "sticky z-50 header-glass border-b border-theme transition-transform duration-300",
           "top-[env(safe-area-inset-top)]",
           // Only apply scroll-aware hiding on mobile portrait, desktop always shows
-          isMobile && !isMobileLandscape && !headerVisible 
-            ? "-translate-y-full" 
+          isMobile && !isMobileLandscape && !headerVisible
+            ? "-translate-y-full"
             : "translate-y-0"
         )}
       >
@@ -358,8 +360,8 @@ export function Layout({ onExitDemo }: LayoutProps) {
             "top-[calc(4rem+env(safe-area-inset-top))]",
             "-mt-px", // Negative margin to eliminate gap from header border
             // Only apply scroll-aware hiding on mobile portrait, desktop always shows
-            isMobile && !isMobileLandscape && !headerVisible 
-              ? "-translate-y-16" 
+            isMobile && !isMobileLandscape && !headerVisible
+              ? "-translate-y-16"
               : "translate-y-0"
           )}
         >
@@ -417,18 +419,22 @@ export function Layout({ onExitDemo }: LayoutProps) {
       {/* Add top padding to account for sticky header + nav on mobile/PWA */}
       {/* Header is 4rem (h-16), Nav is ~2.75rem on mobile (py-1 + icon + text), so we need space for both */}
       {/* In PWA standalone mode, safe area insets are critical for proper spacing */}
-      <main className={cn(
-        "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-        // Mobile/PWA: account for header (4rem) + nav (~2.75rem) + safe area top
-        // Use more precise calculation: header (4rem) + nav container padding + nav item height
-        isMobile
-          ? "pt-[calc(4rem+env(safe-area-inset-top)+2.75rem)] sm:pt-6"
-          : "pt-6",
-        // Bottom padding with safe area inset (especially important for PWA to prevent bottom gap)
-        isPWA
-          ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
-          : "pb-6"
-      )}>
+      <main
+        className={cn(
+          "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+          // Mobile web: header (4rem = 64px) + nav (~2.75rem = 44px) = ~6.75rem = 108px
+          // Reduce padding significantly since browser UI and borders provide spacing
+          // Mobile PWA: add safe area inset on top for notch/status bar
+          // Desktop: standard padding
+          isMobile && isPWA
+            ? "pt-[calc(4rem+env(safe-area-inset-top)+2.75rem)] sm:pt-6"
+            : isMobile
+            ? "pt-6 sm:pt-6" // 5rem = 80px (reduced to minimize gap between nav and content)
+            : "pt-6",
+          // Bottom padding with safe area inset (especially important for PWA to prevent bottom gap)
+          isPWA ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]" : "pb-6"
+        )}
+      >
         <Outlet />
       </main>
 
