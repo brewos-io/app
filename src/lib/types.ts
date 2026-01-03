@@ -729,6 +729,7 @@ export interface LogEntry {
   time: string;
   level: string;
   message: string;
+  source?: string;  // "esp32" or "pico" to distinguish log sources
 }
 
 // Cloud device (from API)

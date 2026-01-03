@@ -42,6 +42,15 @@ export function LogViewer({ maxHeight = "max-h-64" }: LogViewerProps) {
             <span className={`ml-2 ${getLogColor(log.level)}`}>
               [{log.level.toUpperCase()}]
             </span>
+            {log.source && (
+              <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${
+                log.source === "pico" 
+                  ? "bg-purple-500/20 text-purple-300" 
+                  : "bg-blue-500/20 text-blue-300"
+              }`}>
+                {log.source.toUpperCase()}
+              </span>
+            )}
             <span className="text-theme ml-2">{log.message}</span>
           </div>
         ))

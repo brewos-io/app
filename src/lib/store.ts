@@ -1719,6 +1719,7 @@ function addLog(
     time: new Date().toISOString(),
     level: (data.level as string) || "info",
     message: data.message as string,
+    source: (data.source as string) || "esp32",  // Default to "esp32" for backward compatibility
   };
   set({ logs: [log, ...get().logs.slice(0, 99)] });
 }
