@@ -68,6 +68,7 @@ export function SystemSettings() {
       setUpdateError(
         "Device version not available. Please connect to the device and try again."
       );
+      setUpdateResult(null);
       return;
     }
     const version = esp32.version;
@@ -75,11 +76,14 @@ export function SystemSettings() {
     setCheckingUpdate(true);
     setUpdateError(null);
     try {
+      console.log("[SystemSettings] Checking for updates, version:", version);
       const result = await checkForUpdates(version);
+      console.log("[SystemSettings] Update check result:", result);
       setUpdateResult(result);
     } catch (error) {
-      console.error("Failed to check for updates:", error);
+      console.error("[SystemSettings] Failed to check for updates:", error);
       setUpdateError("Failed to check for updates. Please try again.");
+      setUpdateResult(null);
     } finally {
       setCheckingUpdate(false);
     }

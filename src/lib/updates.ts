@@ -5,6 +5,7 @@
  */
 
 import { formatDate as formatDateUtil } from "./date";
+import { isDemoMode } from "./demo-mode";
 
 export type UpdateChannel = "stable" | "beta" | "dev";
 
@@ -268,28 +269,41 @@ function getMockVersions(): VersionInfo[] {
 
 /**
  * Check if we should use mock data
- * Only use mock data in development mode (local dev server)
+ * Only use mock data when demo mode is enabled
+ * All other cases (local ESP32 dev, cloud app, production) should use real GitHub API
  */
 function shouldUseMockData(): boolean {
-  // __ENVIRONMENT__ is set at build time by vite.config.ts
-  // "development" = local dev server, "staging"/"production" = real builds
-  return __ENVIRONMENT__ === "development";
+  // Use mock data only in demo mode (for website visitors trying the app)
+  // All other cases use real GitHub API:
+  // - Local ESP32 development (to test OTA updates)
+  // - Cloud app (production/staging)
+  // - Production builds
+  return isDemoMode();
 }
 
 /**
  * Check for available updates
- * Automatically uses real GitHub API in production/staging, mock data in development
+ * Cloud app always uses real GitHub API
+ * ESP32 local builds use mock data in development mode only
  */
 export async function checkForUpdates(
   currentVersion: string
 ): Promise<UpdateCheckResult> {
-  // Use mock data in development, real GitHub API in production/staging
   const useMock = shouldUseMockData();
+  console.log(
+    `[Updates] Checking for updates (current: ${currentVersion}, useMock: ${useMock})`
+  );
+
   const releases = useMock ? getMockVersions() : await fetchGitHubReleases();
 
   if (!useMock) {
     console.log(
       "[Updates] Fetched releases from GitHub:",
+      releases.map((r) => `${r.version} (${r.channel})`)
+    );
+  } else {
+    console.log(
+      "[Updates] Using mock data (development mode):",
       releases.map((r) => `${r.version} (${r.channel})`)
     );
   }
