@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { RefreshCw, X } from "lucide-react";
-import { setUpdateCallback, activateNewServiceWorker, checkForServiceWorkerUpdate } from "@/lib/push-notifications";
+import {
+  setUpdateCallback,
+  activateNewServiceWorker,
+  checkForServiceWorkerUpdate,
+} from "@/lib/push-notifications";
 import { isDemoMode } from "@/lib/demo-mode";
 
 export function UpdateNotification() {
@@ -17,7 +21,7 @@ export function UpdateNotification() {
       setUpdateAvailable(true);
       setDismissed(false);
     });
-    
+
     // Also check for updates when component mounts (in case one is already waiting)
     checkForServiceWorkerUpdate();
   }, [isDemo]);
@@ -45,7 +49,9 @@ export function UpdateNotification() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm">Update Available</p>
-          <p className="text-xs text-white/80">A new version of BrewOS is ready</p>
+          <p className="text-xs text-white/80">
+            A new version of BrewOS is ready
+          </p>
         </div>
         <button
           onClick={handleUpdate}
@@ -64,4 +70,3 @@ export function UpdateNotification() {
     </div>
   );
 }
-

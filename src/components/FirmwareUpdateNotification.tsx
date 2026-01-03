@@ -1,6 +1,6 @@
 /**
  * Firmware Update Notification Component
- * 
+ *
  * Manages periodic firmware update checks and shows in-app notifications.
  * Works alongside native browser notifications when available.
  */
@@ -25,16 +25,19 @@ interface PendingUpdate {
 }
 
 export function FirmwareUpdateNotification() {
-  const [pendingUpdate, setPendingUpdate] = useState<PendingUpdate | null>(null);
+  const [pendingUpdate, setPendingUpdate] = useState<PendingUpdate | null>(
+    null
+  );
   const [dismissed, setDismissed] = useState(false);
   const esp32Version = useStore((s) => s.esp32.version);
   const machineState = useStore((s) => s.machine.state);
   const connectionState = useStore((s) => s.connectionState);
   const navigate = useNavigate();
   const isDemo = isDemoMode();
-  
+
   // Don't show firmware update notification when machine is offline or not connected
-  const isOfflineOrDisconnected = machineState === "offline" || connectionState !== "connected";
+  const isOfflineOrDisconnected =
+    machineState === "offline" || connectionState !== "connected";
 
   // Set up the callback for in-app notifications
   useEffect(() => {
@@ -99,7 +102,11 @@ export function FirmwareUpdateNotification() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-slide-up">
-      <div className={`${channelColors[pendingUpdate.channel]} rounded-xl shadow-2xl p-4`}>
+      <div
+        className={`${
+          channelColors[pendingUpdate.channel]
+        } rounded-xl shadow-2xl p-4`}
+      >
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
             <Bell className="w-5 h-5" />
@@ -110,7 +117,7 @@ export function FirmwareUpdateNotification() {
               {channelLabels[pendingUpdate.channel]}: v{pendingUpdate.version}
             </p>
             <p className="text-xs opacity-75 mt-1">
-              {pendingUpdate.channel === "dev" 
+              {pendingUpdate.channel === "dev"
                 ? "Latest build from main branch"
                 : "Tap to view details and install"}
             </p>
@@ -146,7 +153,7 @@ export function useFirmwareUpdateCheck() {
 
   const checkNow = useCallback(async () => {
     if (!esp32Version || checking) return null;
-    
+
     setChecking(true);
     try {
       const result = await checkFirmwareUpdates(esp32Version, true);
@@ -158,4 +165,3 @@ export function useFirmwareUpdateCheck() {
 
   return { checkNow, checking };
 }
-
