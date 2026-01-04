@@ -69,6 +69,11 @@ function getTestIcon(testId: number) {
     // User Interface
     0x0c: <Speaker className="w-5 h-5" />, // Buzzer
     0x0d: <Lightbulb className="w-5 h-5" />, // Status LED
+
+    // ESP32 Control Signals (Repurposed USB pins)
+    0x11: <Activity className="w-5 h-5" />, // WEIGHT_STOP_OUTPUT (ESP32 GPIO19)
+    0x12: <RefreshCw className="w-5 h-5" />, // PICO_RUN_OUTPUT (ESP32 GPIO20)
+    0x13: <Activity className="w-5 h-5" />, // WEIGHT_STOP_INPUT (Pico GPIO21)
   };
   return icons[testId] || <HelpCircle className="w-5 h-5" />;
 }
@@ -168,7 +173,7 @@ function DiagnosticResultRow({
             </span>
           )}
         </div>
-        <p className="text-sm text-theme-muted truncate">{result.message}</p>
+        <p className="text-sm text-theme-muted break-words">{result.message}</p>
       </div>
 
       <div className={`flex items-center gap-1.5 ${statusInfo.color}`}>

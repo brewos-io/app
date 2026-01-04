@@ -445,7 +445,10 @@ export type DiagnosticTestId =
   | 0x0a // POWER_METER
   | 0x0b // ESP32_COMM
   | 0x0c // BUZZER
-  | 0x0d; // LED
+  | 0x0d // LED
+  | 0x11 // WEIGHT_STOP_OUTPUT (ESP32 GPIO19)
+  | 0x12 // PICO_RUN_OUTPUT (ESP32 GPIO20)
+  | 0x13; // WEIGHT_STOP_INPUT (Pico GPIO21)
 
 /**
  * Diagnostic result status - matches protocol_defs.h DIAG_STATUS_*
@@ -683,6 +686,34 @@ export const DIAGNOSTIC_TESTS: DiagnosticTestMeta[] = [
     machineTypes: [], // All machine types
     optional: false,
     category: "peripheral",
+  },
+
+  // ==========================================================================
+  // ESP32 CONTROL SIGNALS (Repurposed USB pins)
+  // ==========================================================================
+  {
+    id: 0x11,
+    name: "Brew-by-Weight Stop Signal (ESP32 Output)",
+    description: "ESP32 GPIO19 (USB D+ repurposed) output - Verifies ESP32 can drive WEIGHT_STOP signal HIGH/LOW",
+    machineTypes: [], // All machine types (if brew-by-weight is configured)
+    optional: true, // Only needed if using brew-by-weight feature
+    category: "communication",
+  },
+  {
+    id: 0x12,
+    name: "Pico Reset Control (ESP32 Output)",
+    description: "ESP32 GPIO20 (USB D- repurposed) output - Verifies ESP32 can control Pico RUN pin (reset)",
+    machineTypes: [], // All machine types
+    optional: false,
+    category: "communication",
+  },
+  {
+    id: 0x13,
+    name: "Brew-by-Weight Stop Signal (Pico Input)",
+    description: "Pico GPIO21 input - Verifies Pico can read WEIGHT_STOP signal from ESP32 GPIO19",
+    machineTypes: [], // All machine types (if brew-by-weight is configured)
+    optional: true, // Only needed if using brew-by-weight feature
+    category: "communication",
   },
 ];
 
