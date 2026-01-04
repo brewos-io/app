@@ -446,8 +446,12 @@ export function Diagnostics() {
             description="YD4060 0-16 bar on ADC2 (GPIO28). Fill reservoir before testing. Skip if not installed."
           />
           <TroubleshootItem
-            title="Communication & Power Meter"
-            description="Network controller connection via UART (921600 baud). Power meter is optional, supports PZEM-004T, JSY-MK-163T/194T, and Eastron SDM120/230 via Modbus."
+            title="Network Controller ↔ Machine Controller"
+            description="Serial communication test performs ping-pong to verify UART link (GPIO0/1, 921600 baud). If test fails, check wiring between Network Controller (ESP32) and Machine Controller (Pico)."
+          />
+          <TroubleshootItem
+            title="Power Meter"
+            description="Optional hardware power meter supports PZEM-004T, JSY-MK-163T/194T, and Eastron SDM120/230 via Modbus."
           />
         </div>
       </Card>

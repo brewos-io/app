@@ -650,8 +650,8 @@ export const DIAGNOSTIC_TESTS: DiagnosticTestMeta[] = [
   // ==========================================================================
   {
     id: 0x0b,
-    name: "Network Controller Link",
-    description: "UART0 link on GPIO0/1 (921600 baud)",
+    name: "Network Controller ↔ Machine Controller",
+    description: "Serial communication link (UART0, 921600 baud) - ping-pong test",
     machineTypes: [], // All machine types
     optional: false,
     category: "communication",
