@@ -105,6 +105,15 @@ export class Connection implements IConnection {
           this.lastMessageTime = Date.now();
           this.metrics.connectionStartTime = Date.now();
           this.startStaleCheck();
+
+          // Request full state (including device_info) immediately on connect
+          // This ensures we get machine type and other device info right away
+          setTimeout(() => {
+            if (this.ws?.readyState === WebSocket.OPEN) {
+              this.send("request_state", {});
+            }
+          }, 100); // Small delay to ensure WebSocket is fully ready
+
           resolve();
         };
 

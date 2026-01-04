@@ -581,7 +581,10 @@ export const useStore = create<BrewOSState>()(
         // Check for sequence gaps (missed updates)
         // BUT: Skip gap detection if we have a pending full status request
         // (the response to our request might have a different sequence number)
-        if (currentState.lastStatusSequence !== null && !currentState.pendingFullStatusRequest) {
+        if (
+          currentState.lastStatusSequence !== null &&
+          !currentState.pendingFullStatusRequest
+        ) {
           const expectedSequence = currentState.lastStatusSequence + 1;
           // If we missed updates (gap > 1), request full status
           if (sequence > expectedSequence) {
@@ -608,9 +611,9 @@ export const useStore = create<BrewOSState>()(
         }
 
         // Update sequence and clear pending request flag (we received a status message)
-        set({ 
+        set({
           lastStatusSequence: sequence,
-          pendingFullStatusRequest: false // Clear flag - we got our response
+          pendingFullStatusRequest: false, // Clear flag - we got our response
         });
       }
 
@@ -1221,117 +1224,158 @@ export const useStore = create<BrewOSState>()(
             | boolean
             | undefined;
 
-          set((state) => ({
-            device: {
-              deviceId: (data.deviceId as string) || state.device.deviceId,
-              deviceName:
-                (data.deviceName as string) || state.device.deviceName,
-              machineBrand:
-                (data.machineBrand as string) || state.device.machineBrand,
-              machineModel:
-                (data.machineModel as string) || state.device.machineModel,
-              machineType:
-                (data.machineType as DeviceInfo["machineType"]) ||
-                state.device.machineType,
-              firmwareVersion:
-                (data.firmwareVersion as string) ||
-                state.device.firmwareVersion,
-              hasPressureSensor:
-                data.hasPressureSensor !== undefined
-                  ? (data.hasPressureSensor as boolean)
-                  : state.device.hasPressureSensor,
-            },
-            // Update power settings if provided
-            power: {
-              ...state.power,
-              voltage: (data.mainsVoltage as number) ?? state.power.voltage,
-              maxCurrent: (data.maxCurrent as number) ?? state.power.maxCurrent,
-            },
-            // Update eco mode settings if provided
-            ecoMode: {
-              ...(state.ecoMode ?? defaultEcoMode),
-              ecoBrewTemp:
-                (data.ecoBrewTemp as number) ?? state.ecoMode.ecoBrewTemp,
-              autoOffTimeout:
-                (data.ecoTimeoutMinutes as number) ??
-                state.ecoMode.autoOffTimeout,
-            },
-            // Update pre-infusion settings if provided
-            preinfusion: {
-              ...(state.preinfusion ?? defaultPreinfusion),
-              enabled:
-                (data.preinfusionEnabled as boolean) ??
-                state.preinfusion.enabled,
-              onTimeMs:
-                (data.preinfusionOnMs as number) ?? state.preinfusion.onTimeMs,
-              pauseTimeMs:
-                (data.preinfusionPauseMs as number) ??
-                state.preinfusion.pauseTimeMs,
-            },
-            // Update temperature setpoints from device_info (Pico is source of truth)
-            // These come from Pico's status messages via machineState, which reflect persisted values
-            temps: {
-              ...state.temps,
-              brew: {
-                ...state.temps.brew,
-                setpoint:
-                  (data.brewSetpoint as number) ?? state.temps.brew.setpoint,
+          set((state) => {
+            // Helper to check if a string value exists and is not empty
+            const getStringValue = (
+              value: unknown,
+              fallback: string
+            ): string => {
+              if (typeof value === "string" && value.trim() !== "") {
+                return value;
+              }
+              return fallback;
+            };
+
+            // Helper to check if machineType exists and is valid
+            const getMachineType = (
+              value: unknown,
+              fallback: DeviceInfo["machineType"]
+            ): DeviceInfo["machineType"] => {
+              if (
+                typeof value === "string" &&
+                value.trim() !== "" &&
+                (value === "dual_boiler" ||
+                  value === "single_boiler" ||
+                  value === "heat_exchanger")
+              ) {
+                return value as DeviceInfo["machineType"];
+              }
+              return fallback;
+            };
+
+            return {
+              device: {
+                deviceId: getStringValue(data.deviceId, state.device.deviceId),
+                deviceName: getStringValue(
+                  data.deviceName,
+                  state.device.deviceName
+                ),
+                machineBrand: getStringValue(
+                  data.machineBrand,
+                  state.device.machineBrand
+                ),
+                machineModel: getStringValue(
+                  data.machineModel,
+                  state.device.machineModel
+                ),
+                machineType: getMachineType(
+                  data.machineType,
+                  state.device.machineType
+                ),
+                firmwareVersion: getStringValue(
+                  data.firmwareVersion,
+                  state.device.firmwareVersion
+                ),
+                hasPressureSensor:
+                  data.hasPressureSensor !== undefined
+                    ? (data.hasPressureSensor as boolean)
+                    : state.device.hasPressureSensor,
               },
-              steam: {
-                ...state.temps.steam,
-                setpoint:
-                  (data.steamSetpoint as number) ?? state.temps.steam.setpoint,
+              // Update power settings if provided
+              power: {
+                ...state.power,
+                voltage: (data.mainsVoltage as number) ?? state.power.voltage,
+                maxCurrent:
+                  (data.maxCurrent as number) ?? state.power.maxCurrent,
               },
-              // Always update timestamp for device_info (it's authoritative from Pico)
-              // Optimistic updates check this timestamp to avoid overwriting newer data
-              lastUpdated: Date.now(),
-            },
-            // Update preferences from ESP32 (synced across devices)
-            preferences: prefsData
-              ? {
-                  firstDayOfWeek:
-                    (prefsData.firstDayOfWeek as UserPreferences["firstDayOfWeek"]) ??
-                    state.preferences.firstDayOfWeek,
-                  use24HourTime:
-                    (prefsData.use24HourTime as boolean) ??
-                    state.preferences.use24HourTime,
-                  temperatureUnit:
-                    (prefsData.temperatureUnit as UserPreferences["temperatureUnit"]) ??
-                    state.preferences.temperatureUnit,
-                  electricityPrice:
-                    (prefsData.electricityPrice as number) ??
-                    state.preferences.electricityPrice,
-                  currency:
-                    (prefsData.currency as UserPreferences["currency"]) ??
-                    state.preferences.currency,
-                  // showAppBadge is client-only, preserve from current state
-                  showAppBadge: state.preferences.showAppBadge,
-                }
-              : state.preferences,
-            // Update schedules if provided (nested under schedule.schedules)
-            schedules:
-              (data.schedule as { schedules?: Schedule[] } | undefined)
-                ?.schedules ?? state.schedules,
-            // Update time settings if provided
-            time: (data.time as TimeSettings | undefined) ?? state.time,
-            autoPowerOff: (() => {
-              const scheduleData = data.schedule as
-                | {
-                    autoPowerOffEnabled?: boolean;
-                    autoPowerOffMinutes?: number;
-                  }
-                | undefined;
-              if (!scheduleData) return state.autoPowerOff;
-              return {
+              // Update eco mode settings if provided
+              ecoMode: {
+                ...(state.ecoMode ?? defaultEcoMode),
+                ecoBrewTemp:
+                  (data.ecoBrewTemp as number) ?? state.ecoMode.ecoBrewTemp,
+                autoOffTimeout:
+                  (data.ecoTimeoutMinutes as number) ??
+                  state.ecoMode.autoOffTimeout,
+              },
+              // Update pre-infusion settings if provided
+              preinfusion: {
+                ...(state.preinfusion ?? defaultPreinfusion),
                 enabled:
-                  scheduleData.autoPowerOffEnabled ??
-                  state.autoPowerOff.enabled,
-                minutes:
-                  scheduleData.autoPowerOffMinutes ??
-                  state.autoPowerOff.minutes,
-              };
-            })(),
-          }));
+                  (data.preinfusionEnabled as boolean) ??
+                  state.preinfusion.enabled,
+                onTimeMs:
+                  (data.preinfusionOnMs as number) ??
+                  state.preinfusion.onTimeMs,
+                pauseTimeMs:
+                  (data.preinfusionPauseMs as number) ??
+                  state.preinfusion.pauseTimeMs,
+              },
+              // Update temperature setpoints from device_info (Pico is source of truth)
+              // These come from Pico's status messages via machineState, which reflect persisted values
+              temps: {
+                ...state.temps,
+                brew: {
+                  ...state.temps.brew,
+                  setpoint:
+                    (data.brewSetpoint as number) ?? state.temps.brew.setpoint,
+                },
+                steam: {
+                  ...state.temps.steam,
+                  setpoint:
+                    (data.steamSetpoint as number) ??
+                    state.temps.steam.setpoint,
+                },
+                // Always update timestamp for device_info (it's authoritative from Pico)
+                // Optimistic updates check this timestamp to avoid overwriting newer data
+                lastUpdated: Date.now(),
+              },
+              // Update preferences from ESP32 (synced across devices)
+              preferences: prefsData
+                ? {
+                    firstDayOfWeek:
+                      (prefsData.firstDayOfWeek as UserPreferences["firstDayOfWeek"]) ??
+                      state.preferences.firstDayOfWeek,
+                    use24HourTime:
+                      (prefsData.use24HourTime as boolean) ??
+                      state.preferences.use24HourTime,
+                    temperatureUnit:
+                      (prefsData.temperatureUnit as UserPreferences["temperatureUnit"]) ??
+                      state.preferences.temperatureUnit,
+                    electricityPrice:
+                      (prefsData.electricityPrice as number) ??
+                      state.preferences.electricityPrice,
+                    currency:
+                      (prefsData.currency as UserPreferences["currency"]) ??
+                      state.preferences.currency,
+                    // showAppBadge is client-only, preserve from current state
+                    showAppBadge: state.preferences.showAppBadge,
+                  }
+                : state.preferences,
+              // Update schedules if provided (nested under schedule.schedules)
+              schedules:
+                (data.schedule as { schedules?: Schedule[] } | undefined)
+                  ?.schedules ?? state.schedules,
+              // Update time settings if provided
+              time: (data.time as TimeSettings | undefined) ?? state.time,
+              autoPowerOff: (() => {
+                const scheduleData = data.schedule as
+                  | {
+                      autoPowerOffEnabled?: boolean;
+                      autoPowerOffMinutes?: number;
+                    }
+                  | undefined;
+                if (!scheduleData) return state.autoPowerOff;
+                return {
+                  enabled:
+                    scheduleData.autoPowerOffEnabled ??
+                    state.autoPowerOff.enabled,
+                  minutes:
+                    scheduleData.autoPowerOffMinutes ??
+                    state.autoPowerOff.minutes,
+                };
+              })(),
+            };
+          });
 
           // Also cache preferences locally
           if (prefsData) {
@@ -1719,7 +1763,7 @@ function addLog(
     time: new Date().toISOString(),
     level: (data.level as string) || "info",
     message: data.message as string,
-    source: (data.source as string) || "esp32",  // Default to "esp32" for backward compatibility
+    source: (data.source as string) || "esp32", // Default to "esp32" for backward compatibility
   };
   set({ logs: [log, ...get().logs.slice(0, 99)] });
 }
