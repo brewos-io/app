@@ -28,11 +28,15 @@ export function DemoBanner({ onExit }: DemoBannerProps) {
   const handleMinimize = () => {
     setMinimized(true);
     sessionStorage.setItem("brewos-demo-banner-dismissed", "true");
+    // Dispatch custom event for Layout to update
+    window.dispatchEvent(new CustomEvent("demo-banner-state-change", { detail: { minimized: true } }));
   };
 
   const handleExpand = () => {
     setMinimized(false);
     sessionStorage.removeItem("brewos-demo-banner-dismissed");
+    // Dispatch custom event for Layout to update
+    window.dispatchEvent(new CustomEvent("demo-banner-state-change", { detail: { minimized: false } }));
   };
 
   // Minimized state - show a persistent small indicator that can be expanded
@@ -40,7 +44,7 @@ export function DemoBanner({ onExit }: DemoBannerProps) {
     return (
       <div
         className={`
-          border-b px-4 py-1.5
+          sticky top-0 z-[60] border-b px-4 py-1.5
           ${
             isDark
               ? "bg-gradient-to-r from-violet-500/15 via-purple-500/10 to-violet-500/15 border-violet-400/20"
@@ -103,7 +107,7 @@ export function DemoBanner({ onExit }: DemoBannerProps) {
   return (
     <div
       className={`
-        border-b px-4 py-2.5
+        sticky top-0 z-[60] border-b px-4 py-2.5
         ${
           isDark
             ? "bg-gradient-to-r from-violet-500/20 via-purple-500/15 to-violet-500/20 border-violet-400/30"

@@ -65,6 +65,43 @@ export function Layout({ onExitDemo }: LayoutProps) {
   // Don't use real cloud device data in demo mode - demo has its own mock device
   const selectedDevice = isDemo ? null : getSelectedDevice();
 
+  // Check if demo banner is minimized to adjust header position
+  const [bannerOffset, setBannerOffset] = useState(() => {
+    if (!isDemo) return "0px";
+    const isMinimized =
+      sessionStorage.getItem("brewos-demo-banner-dismissed") === "true";
+    // Banner heights: full ~56px, minimized ~40px
+    return isMinimized ? "40px" : "56px";
+  });
+
+  // Listen for banner state changes
+  useEffect(() => {
+    if (!isDemo) return;
+
+    const checkBannerState = () => {
+      const isMinimized =
+        sessionStorage.getItem("brewos-demo-banner-dismissed") === "true";
+      setBannerOffset(isMinimized ? "40px" : "56px");
+    };
+
+    const handleBannerStateChange = (event: CustomEvent) => {
+      setBannerOffset(event.detail.minimized ? "40px" : "56px");
+    };
+
+    // Check on mount
+    checkBannerState();
+
+    // Listen for custom event from DemoBanner
+    window.addEventListener("demo-banner-state-change", handleBannerStateChange as EventListener);
+    // Also listen for storage changes (cross-tab)
+    window.addEventListener("storage", checkBannerState);
+
+    return () => {
+      window.removeEventListener("demo-banner-state-change", handleBannerStateChange as EventListener);
+      window.removeEventListener("storage", checkBannerState);
+    };
+  }, [isDemo]);
+
   // Scroll-aware header visibility (portrait mode only)
   const [headerVisible, setHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -286,7 +323,10 @@ export function Layout({ onExitDemo }: LayoutProps) {
          Wraps Curtain, Header, and Nav into ONE sticky element.
          This eliminates the gap between Header and Nav during scroll.
       */}
-      <div className="sticky top-0 z-50 flex flex-col header-glass border-b border-theme">
+      <div
+        className="sticky z-50 flex flex-col header-glass border-b border-theme"
+        style={{ top: bannerOffset }}
+      >
         {/* Safe Area Spacer (Visual Curtain) */}
         <div
           className="w-full"
