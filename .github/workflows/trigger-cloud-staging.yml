@@ -1,6 +1,10 @@
 # Trigger cloud staging deployment when app changes are pushed to main
 # This allows the cloud repo to deploy staging when app code changes,
 # even though app and cloud are in separate repositories
+#
+# NOTE: This workflow requires a Personal Access Token (PAT) with 'repo' scope
+# stored as CROSS_REPO_TOKEN secret. GITHUB_TOKEN cannot trigger repository_dispatch
+# events in other repositories, even within the same organization.
 name: "Trigger Cloud Staging Deployment"
 
 on:
@@ -30,7 +34,8 @@ jobs:
       - name: Trigger Cloud Staging Deployment
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Use PAT for cross-repository access (GITHUB_TOKEN cannot trigger repository_dispatch in other repos)
+          github-token: ${{ secrets.CROSS_REPO_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const { data: response } = await github.rest.repos.createDispatchEvent({
               owner: 'brewos-io',
