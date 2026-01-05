@@ -1,5 +1,9 @@
 import type { Preview } from "@storybook/react";
-import { themes as appThemes, applyTheme, type ThemeId } from "../src/lib/themes";
+import {
+  themes as appThemes,
+  applyTheme,
+  type ThemeId,
+} from "../src/lib/themes";
 import "../src/styles/index.css";
 
 // Apply default theme on load
@@ -63,4 +67,3 @@ const preview: Preview = {
 };
 
 export default preview;
-
