@@ -20,10 +20,12 @@ import {
   Check,
   Users,
   Share2,
+  Pencil,
 } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
 import { DeviceUsers } from "@/components/DeviceUsers";
 import { ShareDevice } from "@/components/ShareDevice";
+import { Input } from "@/components/Input";
 import { isRunningAsPWA } from "@/lib/pwa";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +61,7 @@ export function Machines() {
     claimDevice,
     selectDevice,
     selectedDeviceId: realSelectedDeviceId,
+    renameDevice,
   } = useAppStore();
 
   const isDemo = isDemoMode();
@@ -75,6 +78,12 @@ export function Machines() {
     deviceId: string;
     deviceName: string;
   } | null>(null);
+  const [renameDeviceOpen, setRenameDeviceOpen] = useState<{
+    deviceId: string;
+    deviceName: string;
+  } | null>(null);
+  const [renameValue, setRenameValue] = useState<string>("");
+  const [renameLoading, setRenameLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (isDemo) return; // Skip auth check in demo mode
@@ -138,6 +147,43 @@ export function Machines() {
       selectDevice(deviceId);
       navigate(`/machine/${deviceId}`);
     }
+  };
+
+  const handleRename = async () => {
+    if (!renameDeviceOpen || !renameValue.trim()) return;
+
+    setRenameLoading(true);
+    try {
+      if (isDemo) {
+        // In demo mode, just update the local demo device
+        // The demo device is read-only, so we simulate success
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setRenameDeviceOpen(null);
+        setRenameValue("");
+      } else {
+        const success = await renameDevice(
+          renameDeviceOpen.deviceId,
+          renameValue.trim()
+        );
+        if (success) {
+          setRenameDeviceOpen(null);
+          setRenameValue("");
+          await fetchDevices();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to rename device:", error);
+    } finally {
+      setRenameLoading(false);
+    }
+  };
+
+  const handleOpenRename = (device: CloudDevice) => {
+    setRenameDeviceOpen({
+      deviceId: device.id,
+      deviceName: device.name,
+    });
+    setRenameValue(device.name);
   };
 
   if (authLoading && !isDemo) {
@@ -311,6 +357,16 @@ export function Machines() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        handleOpenRename(device);
+                      }}
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-theme-secondary hover:bg-theme-tertiary flex items-center justify-center text-theme-muted hover:text-theme transition-colors"
+                      title="Rename device"
+                    >
+                      <Pencil className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShareDeviceOpen({
                           deviceId: device.id,
                           deviceName: device.name,
@@ -362,6 +418,74 @@ export function Machines() {
           deviceName={shareDeviceOpen.deviceName}
           onClose={() => setShareDeviceOpen(null)}
         />
+      )}
+
+      {/* Rename Device Modal */}
+      {renameDeviceOpen && (
+        <div className="fixed inset-0 bg-black/50 xs:backdrop-blur-sm flex items-center justify-center xs:p-4 z-50 animate-in fade-in duration-200">
+          <Card className="w-full xs:max-w-md animate-in zoom-in-95 duration-300 m-0 rounded-none xs:rounded-2xl">
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-theme/10">
+              <h2 className="text-xl sm:text-2xl font-bold text-theme">
+                Rename Machine
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setRenameDeviceOpen(null);
+                  setRenameValue("");
+                }}
+                className="flex-shrink-0"
+                disabled={renameLoading}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <Input
+                label="Machine Name"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                placeholder="Enter machine name"
+                disabled={renameLoading}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    renameValue.trim() &&
+                    !renameLoading
+                  ) {
+                    handleRename();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setRenameDeviceOpen(null);
+                  setRenameValue("");
+                }}
+                disabled={renameLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRename}
+                loading={renameLoading}
+                disabled={
+                  !renameValue.trim() ||
+                  renameValue.trim() === renameDeviceOpen.deviceName
+                }
+              >
+                Save
+              </Button>
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* Add Machine Flow */}
