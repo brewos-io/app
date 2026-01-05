@@ -126,3 +126,84 @@ export function getDemoSchedules() {
     autoPowerOffMinutes: 120,
   };
 }
+
+/**
+ * Get demo logs data (mock logs for demo mode)
+ */
+export function getDemoLogs() {
+  const now = Date.now();
+  const oneMinute = 60 * 1000;
+
+  return [
+    {
+      id: now - 5 * oneMinute,
+      time: new Date(now - 5 * oneMinute).toISOString(),
+      level: "info",
+      message: "Machine powered on",
+      source: "esp32",
+    },
+    {
+      id: now - 4 * oneMinute,
+      time: new Date(now - 4 * oneMinute).toISOString(),
+      level: "info",
+      message: "WiFi connected to 'HomeNetwork' (192.168.1.100)",
+      source: "esp32",
+    },
+    {
+      id: now - 3 * oneMinute - 30 * 1000,
+      time: new Date(now - 3 * oneMinute - 30 * 1000).toISOString(),
+      level: "info",
+      message: "Pico controller connected",
+      source: "esp32",
+    },
+    {
+      id: now - 3 * oneMinute,
+      time: new Date(now - 3 * oneMinute).toISOString(),
+      level: "info",
+      message: "Heating started - target: 93.0°C",
+      source: "pico",
+    },
+    {
+      id: now - 2 * oneMinute - 30 * 1000,
+      time: new Date(now - 2 * oneMinute - 30 * 1000).toISOString(),
+      level: "info",
+      message: "Boiler temperature: 85.2°C",
+      source: "pico",
+    },
+    {
+      id: now - 2 * oneMinute,
+      time: new Date(now - 2 * oneMinute).toISOString(),
+      level: "info",
+      message: "Boiler temperature: 90.1°C",
+      source: "pico",
+    },
+    {
+      id: now - 1 * oneMinute - 30 * 1000,
+      time: new Date(now - 1 * oneMinute - 30 * 1000).toISOString(),
+      level: "info",
+      message: "Target temperature reached: 93.0°C",
+      source: "pico",
+    },
+    {
+      id: now - 1 * oneMinute,
+      time: new Date(now - 1 * oneMinute).toISOString(),
+      level: "info",
+      message: "Brewing started",
+      source: "pico",
+    },
+    {
+      id: now - 30 * 1000,
+      time: new Date(now - 30 * 1000).toISOString(),
+      level: "info",
+      message: "Brewing stopped - shot time: 28s",
+      source: "pico",
+    },
+    {
+      id: now - 10 * 1000,
+      time: new Date(now - 10 * 1000).toISOString(),
+      level: "info",
+      message: "System idle - maintaining temperature",
+      source: "pico",
+    },
+  ];
+}

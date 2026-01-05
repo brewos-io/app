@@ -1,5 +1,6 @@
 import { useStore } from "@/lib/store";
 import { formatTime } from "@/lib/date";
+import { isDemoMode, getDemoLogs } from "@/lib/demo-mode";
 
 interface LogViewerProps {
   maxHeight?: string;
@@ -24,6 +25,10 @@ function getLogColor(level: string): string {
 export function LogViewer({ maxHeight = "max-h-64" }: LogViewerProps) {
   const logs = useStore((s) => s.logs);
   const connectionState = useStore((s) => s.connectionState);
+  const isDemo = isDemoMode();
+
+  // Use demo logs if in demo mode and no real logs available
+  const displayLogs = isDemo && logs.length === 0 ? getDemoLogs() : logs;
 
   // If maxHeight is "h-full", use full height; otherwise use max-height
   const heightClass = maxHeight === "h-full" ? "h-full" : maxHeight;
@@ -32,8 +37,8 @@ export function LogViewer({ maxHeight = "max-h-64" }: LogViewerProps) {
     <div
       className={`${heightClass} overflow-y-auto bg-theme-secondary rounded-xl p-4 font-mono text-xs`}
     >
-      {logs.length > 0 ? (
-        logs.map((log) => (
+      {displayLogs.length > 0 ? (
+        displayLogs.map((log) => (
           <div
             key={log.id}
             className="py-1 border-b border-theme last:border-0"
