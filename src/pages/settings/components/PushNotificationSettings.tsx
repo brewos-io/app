@@ -428,27 +428,27 @@ export function PushNotificationSettings() {
 
           {/* Actions */}
           <div className="space-y-3">
-            {!isSubscribed ? (
-              <Button
-                onClick={handleSubscribe}
-                loading={isLoading}
-                disabled={permission === "denied" || !isRegistered}
-                className="w-full"
-              >
-                <Bell className="w-4 h-4 mr-2" />
-                Enable Push Notifications
-              </Button>
-            ) : (
-              <Button
-                onClick={handleUnsubscribe}
-                loading={isLoading}
-                variant="secondary"
-                className="w-full"
-              >
-                <BellOff className="w-4 h-4 mr-2" />
-                Disable Push Notifications
-              </Button>
-            )}
+            <div className="flex justify-center">
+              {!isSubscribed ? (
+                <Button
+                  onClick={handleSubscribe}
+                  loading={isLoading}
+                  disabled={permission === "denied" || !isRegistered}
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  Enable Push Notifications
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleUnsubscribe}
+                  loading={isLoading}
+                  variant="secondary"
+                >
+                  <BellOff className="w-4 h-4 mr-2" />
+                  Disable Push Notifications
+                </Button>
+              )}
+            </div>
 
             {permission === "denied" && (
               <p className="text-xs text-coffee-500 text-center">
@@ -467,7 +467,7 @@ export function PushNotificationSettings() {
       </Card>
 
       {/* App Badge Card */}
-      <AppBadgeSettings />
+      <AppBadgeSettings isSubscribed={isSubscribed} />
 
       {/* Notification Preferences Card - Always visible, disabled when not subscribed */}
       <Card className={!isSubscribed ? "opacity-60" : ""}>
@@ -561,7 +561,7 @@ export function PushNotificationSettings() {
 /**
  * App Badge Settings - Shows a dot on the app icon when machines are online
  */
-function AppBadgeSettings() {
+function AppBadgeSettings({ isSubscribed }: { isSubscribed: boolean }) {
   const { isSupported } = useAppBadge();
   const showAppBadge = useStore((s) => s.preferences.showAppBadge);
   const setPreference = useStore((s) => s.setPreference);
@@ -571,18 +571,24 @@ function AppBadgeSettings() {
   }
 
   return (
-    <Card>
+    <Card className={!isSubscribed ? "opacity-60" : ""}>
       <CardHeader>
         <CardTitle icon={<Circle className="w-5 h-5" />}>
           App Badge
         </CardTitle>
         <CardDescription>
-          Show a notification dot on the app icon
+          {isSubscribed
+            ? "Show a notification dot on the app icon"
+            : "Enable push notifications above to use app badge"}
         </CardDescription>
       </CardHeader>
 
       <div className="p-4 sm:p-6">
-        <div className="flex items-start gap-2.5 p-2.5 sm:p-3 bg-theme-secondary rounded-xl">
+        <div
+          className={`flex items-start gap-2.5 p-2.5 sm:p-3 bg-theme-secondary rounded-xl ${
+            !isSubscribed ? "pointer-events-none" : ""
+          }`}
+        >
           <div className="p-1.5 sm:p-2 bg-theme-tertiary rounded-lg shrink-0">
             <Circle className="w-4 h-4 text-red-500 fill-red-500" />
           </div>
@@ -599,6 +605,7 @@ function AppBadgeSettings() {
               <Toggle
                 checked={showAppBadge}
                 onChange={(checked) => setPreference("showAppBadge", checked)}
+                disabled={!isSubscribed}
               />
             </div>
           </div>

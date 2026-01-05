@@ -14,6 +14,8 @@ import {
   Wifi,
   Shield,
   Users,
+  QrCode,
+  AlertCircle,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -176,15 +178,17 @@ export function CloudShareSettings() {
             </div>
           </div>
 
-          {/* QR Code or Generate Button */}
-          <div className="bg-white rounded-xl p-4 border border-theme flex flex-col items-center mb-4">
+          {/* QR Code or Empty State */}
+          <div className="bg-white rounded-xl p-6 border border-theme flex flex-col items-center justify-center mb-4 min-h-[200px]">
             {loading ? (
-              <div className="w-40 h-40 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-accent" />
+              <div className="flex flex-col items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-accent mb-3" />
+                <p className="text-sm text-theme-muted">Generating share link...</p>
               </div>
             ) : error ? (
-              <div className="w-40 h-40 flex flex-col items-center justify-center text-center">
-                <p className="text-sm text-theme-muted mb-3">{error}</p>
+              <div className="flex flex-col items-center justify-center text-center">
+                <AlertCircle className="w-12 h-12 text-error mb-3" />
+                <p className="text-sm text-theme-muted mb-4">{error}</p>
                 <Button variant="secondary" size="sm" onClick={generateShareLink}>
                   Try Again
                 </Button>
@@ -212,8 +216,16 @@ export function CloudShareSettings() {
                 )}
               </>
             ) : (
-              <div className="w-40 h-40 flex flex-col items-center justify-center">
-                <Button onClick={generateShareLink}>Generate Share Link</Button>
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="p-4 bg-theme-secondary rounded-full mb-4">
+                  <QrCode className="w-8 h-8 text-theme-muted" />
+                </div>
+                <p className="text-sm font-medium text-theme mb-1">
+                  No share link generated
+                </p>
+                <p className="text-xs text-theme-muted max-w-[200px]">
+                  Click the button below to create a share link for your device
+                </p>
               </div>
             )}
           </div>
