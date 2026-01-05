@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
+import { useAppStore } from "@/lib/mode";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/Button";
 import { LogViewer } from "@/components/LogViewer";
@@ -31,6 +32,7 @@ export function Logs() {
   const navigate = useNavigate();
   const clearLogs = useStore((s) => s.clearLogs);
   const devMode = useDevMode();
+  const { mode, selectedDeviceId } = useAppStore();
 
   const [logInfo, setLogInfo] = useState<LogInfo | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -38,10 +40,24 @@ export function Logs() {
   const [togglingPico, setTogglingPico] = useState(false);
   const [togglingDebug, setTogglingDebug] = useState(false);
 
-  // Fetch log info from device (local mode only - uses relative path)
+  // Build API URL with device parameter for cloud mode
+  const buildApiUrl = useCallback(
+    (endpoint: string) => {
+      const baseUrl = `/api/logs${endpoint}`;
+      if (mode === "cloud" && selectedDeviceId) {
+        const separator = endpoint.includes("?") ? "&" : "?";
+        return `${baseUrl}${separator}device=${selectedDeviceId}`;
+      }
+      return baseUrl;
+    },
+    [mode, selectedDeviceId]
+  );
+
+  // Fetch log info from device
   const fetchLogInfo = useCallback(async () => {
     try {
-      const response = await fetch("/api/logs/info");
+      const url = buildApiUrl("/info");
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setLogInfo(data);
@@ -49,7 +65,7 @@ export function Logs() {
     } catch (error) {
       console.error("Failed to fetch log info:", error);
     }
-  }, []);
+  }, [buildApiUrl]);
 
   useEffect(() => {
     fetchLogInfo();
@@ -66,7 +82,8 @@ export function Logs() {
       const formData = new FormData();
       formData.append("enabled", enabled.toString());
 
-      const response = await fetch("/api/logs/enable", {
+      const url = buildApiUrl("/enable");
+      const response = await fetch(url, {
         method: "POST",
         body: formData,
       });
@@ -89,17 +106,18 @@ export function Logs() {
     try {
       setDownloading(true);
 
-      const response = await fetch("/api/logs");
+      const apiUrl = buildApiUrl("");
+      const response = await fetch(apiUrl);
       if (response.ok) {
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
+        const blobUrl = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = url;
+        a.href = blobUrl;
         a.download = `brewos_logs_${new Date().toISOString().slice(0, 10)}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+        window.URL.revokeObjectURL(blobUrl);
       }
     } catch (error) {
       console.error("Failed to download logs:", error);
@@ -111,7 +129,8 @@ export function Logs() {
   // Clear device logs
   const clearDeviceLogs = async () => {
     try {
-      await fetch("/api/logs", { method: "DELETE" });
+      const url = buildApiUrl("");
+      await fetch(url, { method: "DELETE" });
       await fetchLogInfo();
     } catch (error) {
       console.error("Failed to clear device logs:", error);
@@ -126,7 +145,8 @@ export function Logs() {
       const formData = new FormData();
       formData.append("enabled", enabled.toString());
 
-      await fetch("/api/logs/pico", {
+      const url = buildApiUrl("/pico");
+      await fetch(url, {
         method: "POST",
         body: formData,
       });
@@ -147,7 +167,8 @@ export function Logs() {
       const formData = new FormData();
       formData.append("enabled", enabled.toString());
 
-      await fetch("/api/logs/debug", {
+      const url = buildApiUrl("/debug");
+      await fetch(url, {
         method: "POST",
         body: formData,
       });
@@ -296,9 +317,7 @@ export function Logs() {
       {devMode && (
         <Card>
           <CardHeader>
-            <CardTitle icon={<Bug className="w-5 h-5" />}>
-              Debug Logs
-            </CardTitle>
+            <CardTitle icon={<Bug className="w-5 h-5" />}>Debug Logs</CardTitle>
             <Badge variant={logInfo?.debugLogs ? "success" : "default"}>
               {logInfo?.debugLogs ? "Enabled" : "Disabled"}
             </Badge>
@@ -322,8 +341,9 @@ export function Logs() {
             </div>
 
             <p className="text-xs text-theme-muted">
-              When enabled, DEBUG logs are shown in Serial, log buffer, and WebSocket.
-              Setting persists across reboots and applies early in boot to capture boot logs.
+              When enabled, DEBUG logs are shown in Serial, log buffer, and
+              WebSocket. Setting persists across reboots and applies early in
+              boot to capture boot logs.
             </p>
           </div>
         </Card>
