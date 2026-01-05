@@ -1,9 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAppStore } from "@/lib/mode";
 import { useMobileLandscape } from "@/lib/useMobileLandscape";
 import { PageHeader } from "@/components/PageHeader";
 import { getSettingsTabs, SettingsTab } from "./constants/tabs";
-import { isDemoMode } from "@/lib/demo-mode";
 import {
   SettingsNav,
   MachineSettings,
@@ -27,11 +25,8 @@ import {
 export function Settings() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { mode } = useAppStore();
   const isMobileLandscape = useMobileLandscape();
 
-  const isCloud = mode === "cloud";
-  const isDemo = isDemoMode();
   const SETTINGS_TABS = getSettingsTabs();
 
   // Get active tab from URL hash, default to 'machine'
@@ -81,9 +76,9 @@ export function Settings() {
       {/* Cloud Settings */}
       {activeTab === "cloud" && (
         <>
-          {/* Local mode: Show ESP32 pairing and cloud configuration */}
-          {/* Cloud mode: Show device sharing and cloud status */}
-          {isCloud && !isDemo ? <CloudShareSettings /> : <CloudSettings />}
+          {/* Show both CloudShareSettings and CloudSettings in all modes */}
+          <CloudShareSettings />
+          <CloudSettings />
           {/* Push notification settings are shown in all modes */}
           <PushNotificationSettings />
         </>
