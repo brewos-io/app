@@ -1211,12 +1211,13 @@ export const useStore = create<BrewOSState>()(
             if (typeof data.synced === "boolean") {
               synced = data.synced;
             } else if (typeof data.synced === "string") {
-              synced = data.synced.toLowerCase() === "true" || data.synced === "1";
+              synced =
+                data.synced.toLowerCase() === "true" || data.synced === "1";
             } else if (typeof data.synced === "number") {
               synced = data.synced !== 0;
             }
           }
-          
+
           set({
             timeStatus: {
               synced,
