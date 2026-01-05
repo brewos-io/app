@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useCommand } from "@/lib/useCommand";
+import { useAppStore } from "@/lib/mode";
 import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
@@ -85,7 +86,9 @@ const DEMO_CLOUD_STATUS: CloudStatus = {
 export function CloudSettings() {
   const isDemo = isDemoMode();
   const devMode = useDevMode();
+  const { mode } = useAppStore();
   const { sendCommand } = useCommand();
+  const isCloudMode = mode === "cloud";
   const [cloudConfig, setCloudConfig] = useState<CloudStatus | null>(
     isDemo ? DEMO_CLOUD_STATUS : null
   );
@@ -98,8 +101,10 @@ export function CloudSettings() {
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // If in cloud mode, cloud is definitely enabled (we're connected through it)
+  // Otherwise, check the cloudConfig status
   const [cloudEnabled, setCloudEnabled] = useState(
-    isDemo ? true : cloudConfig?.enabled || false
+    isDemo ? true : isCloudMode ? true : cloudConfig?.enabled || false
   );
   const [cloudUrl, setCloudUrl] = useState(
     cloudConfig?.serverUrl || "wss://cloud.brewos.io"
@@ -202,6 +207,76 @@ export function CloudSettings() {
     }
   };
 
+  const handleCloudToggle = (enabled: boolean) => {
+    // Update local state optimistically
+    setCloudEnabled(enabled);
+
+    // Demo mode: just update local state
+    if (isDemo) {
+      setCloudConfig({
+        enabled,
+        connected: enabled,
+        serverUrl: cloudUrl,
+      });
+      // If enabling cloud, fetch pairing QR
+      if (enabled) {
+        fetchPairingQR();
+      } else {
+        setPairing(null);
+        setError(null);
+      }
+      return;
+    }
+
+    // In cloud mode, can't control ESP32 cloud connection remotely
+    // User needs to access device locally to change this
+    if (isCloudMode) {
+      setError(
+        "Cannot change cloud connection while connected through cloud. Please access the device locally."
+      );
+      // Revert the toggle
+      setCloudEnabled(!enabled);
+      return;
+    }
+
+    // Send command to ESP32 immediately
+    const success = sendCommand(
+      "set_cloud_config",
+      {
+        enabled,
+        serverUrl: cloudUrl,
+      },
+      {
+        successMessage: enabled
+          ? "Cloud connection enabled"
+          : "Cloud connection disabled",
+      }
+    );
+
+    if (success) {
+      setCloudConfig({
+        enabled,
+        connected: cloudConfig?.connected || false,
+        serverUrl: cloudUrl,
+      });
+
+      // If enabling cloud, fetch pairing QR after a short delay to allow backend to process
+      if (enabled) {
+        setTimeout(() => {
+          fetchPairingQR();
+        }, 1000);
+      } else {
+        // Clear pairing data when disabling cloud
+        setPairing(null);
+        setError(null);
+      }
+    } else {
+      // Revert on failure
+      setCloudEnabled(!enabled);
+      setError("Failed to update cloud connection. Please try again.");
+    }
+  };
+
   const saveSettings = () => {
     if (saving) return; // Prevent double-click
     setSaving(true);
@@ -213,14 +288,16 @@ export function CloudSettings() {
         connected: cloudEnabled,
         serverUrl: cloudUrl,
       });
-      // If enabling cloud, fetch pairing QR
-      if (cloudEnabled) {
-        fetchPairingQR();
-      } else {
-        setPairing(null);
-        setError(null);
-      }
       setTimeout(() => setSaving(false), 600);
+      return;
+    }
+
+    // In cloud mode, can't control ESP32 cloud connection remotely
+    if (isCloudMode) {
+      setError(
+        "Cannot change cloud settings while connected through cloud. Please access the device locally."
+      );
+      setSaving(false);
       return;
     }
 
@@ -239,17 +316,6 @@ export function CloudSettings() {
         connected: cloudConfig?.connected || false,
         serverUrl: cloudUrl,
       });
-
-      // If enabling cloud, fetch pairing QR after a short delay to allow backend to process
-      if (cloudEnabled) {
-        setTimeout(() => {
-          fetchPairingQR();
-        }, 1000);
-      } else {
-        // Clear pairing data when disabling cloud
-        setPairing(null);
-        setError(null);
-      }
     }
 
     // Brief visual feedback for fire-and-forget WebSocket command
@@ -263,6 +329,20 @@ export function CloudSettings() {
       setCloudEnabled(true);
       setCloudUrl(DEMO_CLOUD_STATUS.serverUrl);
       setSelectedEnv(detectEnvironment(DEMO_CLOUD_STATUS.serverUrl));
+      return;
+    }
+
+    // If in cloud mode, cloud is enabled (we're connected through it)
+    if (isCloudMode) {
+      setCloudConfig({
+        enabled: true,
+        connected: true,
+        serverUrl: "wss://cloud.brewos.io", // Default cloud server
+      });
+      setCloudEnabled(true);
+      setCloudUrl("wss://cloud.brewos.io");
+      setSelectedEnv("production");
+      setLoadingStatus(false);
       return;
     }
 
@@ -281,7 +361,17 @@ export function CloudSettings() {
     } finally {
       setLoadingStatus(false);
     }
-  }, [isDemo]);
+  }, [isDemo, isCloudMode]);
+
+  // Update cloudEnabled when cloudConfig changes
+  useEffect(() => {
+    if (cloudConfig) {
+      setCloudEnabled(cloudConfig.enabled);
+    } else if (isCloudMode) {
+      // If in cloud mode but no config yet, cloud is enabled
+      setCloudEnabled(true);
+    }
+  }, [cloudConfig, isCloudMode]);
 
   // Fetch cloud status on mount
   useEffect(() => {
@@ -340,7 +430,9 @@ export function CloudSettings() {
                       Cloud Connection
                     </span>
                   </div>
-                  <Badge variant={cloudConfig?.connected ? "success" : "default"}>
+                  <Badge
+                    variant={cloudConfig?.connected ? "success" : "default"}
+                  >
                     {cloudConfig?.connected ? "Connected" : "Disconnected"}
                   </Badge>
                 </div>
@@ -356,7 +448,9 @@ export function CloudSettings() {
                 <div className="flex items-center justify-between py-2">
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-theme-muted" />
-                    <span className="text-sm text-theme-secondary">Machine ID</span>
+                    <span className="text-sm text-theme-secondary">
+                      Machine ID
+                    </span>
                   </div>
                   <span className="text-sm text-theme-muted font-mono">
                     {pairing?.deviceId || "—"}
@@ -526,10 +620,13 @@ export function CloudSettings() {
               <Toggle
                 label="Enable Cloud Connection"
                 checked={cloudEnabled}
-                onChange={setCloudEnabled}
+                onChange={handleCloudToggle}
+                disabled={isCloudMode}
               />
               <p className="text-xs text-theme-muted mt-1 ml-14">
-                Allow remote access via BrewOS Cloud
+                {isCloudMode
+                  ? "Access device locally to change cloud connection"
+                  : "Allow remote access via BrewOS Cloud"}
               </p>
             </div>
 

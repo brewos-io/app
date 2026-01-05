@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useStore } from "@/lib/store";
 import { useCommand } from "@/lib/useCommand";
 import { Card, CardHeader, CardTitle } from "@/components/Card";
@@ -28,6 +28,9 @@ export function TimeSettings() {
   const [syncing, setSyncing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const syncPollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   // Sync local settings with store when not editing
   useEffect(() => {
@@ -47,6 +50,25 @@ export function TimeSettings() {
     }, 10000);
     return () => clearInterval(interval);
   }, [sendCommand]);
+
+  // Watch for sync completion when syncing
+  useEffect(() => {
+    if (syncing && timeStatus?.synced && syncPollIntervalRef.current) {
+      clearInterval(syncPollIntervalRef.current);
+      syncPollIntervalRef.current = null;
+      setSyncing(false);
+    }
+  }, [syncing, timeStatus?.synced]);
+
+  // Cleanup sync polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (syncPollIntervalRef.current) {
+        clearInterval(syncPollIntervalRef.current);
+        syncPollIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const saveSettings = () => {
     if (saving) return;
@@ -73,16 +95,36 @@ export function TimeSettings() {
   };
 
   const syncNow = () => {
+    // Clear any existing poll interval
+    if (syncPollIntervalRef.current) {
+      clearInterval(syncPollIntervalRef.current);
+      syncPollIntervalRef.current = null;
+    }
+
     setSyncing(true);
     sendCommand("sync_time", undefined, {
       successMessage: "NTP sync initiated",
     });
 
-    // Check status after a delay
-    setTimeout(() => {
+    // Poll for status multiple times - NTP sync can take 5-15 seconds
+    let pollCount = 0;
+    const maxPolls = 20; // Poll for up to 20 seconds (20 * 1s intervals)
+
+    // Start polling immediately, then every second
+    sendCommand("get_time_status");
+    syncPollIntervalRef.current = setInterval(() => {
+      pollCount++;
       sendCommand("get_time_status");
-      setSyncing(false);
-    }, 3000);
+
+      // Stop polling after max attempts (sync completion is handled by useEffect)
+      if (pollCount >= maxPolls) {
+        if (syncPollIntervalRef.current) {
+          clearInterval(syncPollIntervalRef.current);
+          syncPollIntervalRef.current = null;
+        }
+        setSyncing(false);
+      }
+    }, 1000); // Poll every second
   };
 
   // Get timezone label from offset

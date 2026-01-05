@@ -1205,9 +1205,21 @@ export const useStore = create<BrewOSState>()(
           break;
 
         case "time_status":
+          // Handle synced field - could be boolean, string "true"/"false", or number 1/0
+          let synced = false;
+          if (data.synced !== undefined && data.synced !== null) {
+            if (typeof data.synced === "boolean") {
+              synced = data.synced;
+            } else if (typeof data.synced === "string") {
+              synced = data.synced.toLowerCase() === "true" || data.synced === "1";
+            } else if (typeof data.synced === "number") {
+              synced = data.synced !== 0;
+            }
+          }
+          
           set({
             timeStatus: {
-              synced: (data.synced as boolean) ?? false,
+              synced,
               currentTime: (data.currentTime as string) ?? "",
               timezone: (data.timezone as string) ?? "",
               utcOffset: (data.utcOffset as number) ?? 0,

@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAppStore } from "@/lib/mode";
 import { useMobileLandscape } from "@/lib/useMobileLandscape";
 import { PageHeader } from "@/components/PageHeader";
 import { getSettingsTabs, SettingsTab } from "./constants/tabs";
@@ -25,8 +26,10 @@ import {
 export function Settings() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { mode } = useAppStore();
   const isMobileLandscape = useMobileLandscape();
 
+  const isCloud = mode === "cloud";
   const SETTINGS_TABS = getSettingsTabs();
 
   // Get active tab from URL hash, default to 'machine'
@@ -76,9 +79,9 @@ export function Settings() {
       {/* Cloud Settings */}
       {activeTab === "cloud" && (
         <>
-          {/* Show both CloudShareSettings and CloudSettings in all modes */}
-          <CloudShareSettings />
-          <CloudSettings />
+          {/* Cloud mode (already paired): Show Share Device and Cloud Status */}
+          {/* Local mode (not paired): Show Pair with Cloud, Cloud Status, and Cloud Settings */}
+          {isCloud ? <CloudShareSettings /> : <CloudSettings />}
           {/* Push notification settings are shown in all modes */}
           <PushNotificationSettings />
         </>

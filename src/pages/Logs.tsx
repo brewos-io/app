@@ -32,7 +32,7 @@ export function Logs() {
   const navigate = useNavigate();
   const clearLogs = useStore((s) => s.clearLogs);
   const devMode = useDevMode();
-  const { mode, selectedDeviceId } = useAppStore();
+  const { mode, selectedDeviceId, getAccessToken } = useAppStore();
 
   const [logInfo, setLogInfo] = useState<LogInfo | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -53,11 +53,24 @@ export function Logs() {
     [mode, selectedDeviceId]
   );
 
+  // Build headers with authentication for cloud mode
+  const buildAuthHeaders = useCallback(async (): Promise<HeadersInit> => {
+    const headers: HeadersInit = {};
+    if (mode === "cloud") {
+      const token = await getAccessToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return headers;
+  }, [mode, getAccessToken]);
+
   // Fetch log info from device
   const fetchLogInfo = useCallback(async () => {
     try {
       const url = buildApiUrl("/info");
-      const response = await fetch(url);
+      const headers = await buildAuthHeaders();
+      const response = await fetch(url, { headers });
       if (response.ok) {
         const data = await response.json();
         setLogInfo(data);
@@ -65,7 +78,7 @@ export function Logs() {
     } catch (error) {
       console.error("Failed to fetch log info:", error);
     }
-  }, [buildApiUrl]);
+  }, [buildApiUrl, buildAuthHeaders]);
 
   useEffect(() => {
     fetchLogInfo();
@@ -83,8 +96,11 @@ export function Logs() {
       formData.append("enabled", enabled.toString());
 
       const url = buildApiUrl("/enable");
+      const headers = await buildAuthHeaders();
+
       const response = await fetch(url, {
         method: "POST",
+        headers,
         body: formData,
       });
 
@@ -107,7 +123,9 @@ export function Logs() {
       setDownloading(true);
 
       const apiUrl = buildApiUrl("");
-      const response = await fetch(apiUrl);
+      const headers = await buildAuthHeaders();
+
+      const response = await fetch(apiUrl, { headers });
       if (response.ok) {
         const blob = await response.blob();
         const blobUrl = window.URL.createObjectURL(blob);
@@ -130,7 +148,8 @@ export function Logs() {
   const clearDeviceLogs = async () => {
     try {
       const url = buildApiUrl("");
-      await fetch(url, { method: "DELETE" });
+      const headers = await buildAuthHeaders();
+      await fetch(url, { method: "DELETE", headers });
       await fetchLogInfo();
     } catch (error) {
       console.error("Failed to clear device logs:", error);
@@ -146,8 +165,11 @@ export function Logs() {
       formData.append("enabled", enabled.toString());
 
       const url = buildApiUrl("/pico");
+      const headers = await buildAuthHeaders();
+
       await fetch(url, {
         method: "POST",
+        headers,
         body: formData,
       });
 
@@ -168,8 +190,11 @@ export function Logs() {
       formData.append("enabled", enabled.toString());
 
       const url = buildApiUrl("/debug");
+      const headers = await buildAuthHeaders();
+
       await fetch(url, {
         method: "POST",
+        headers,
         body: formData,
       });
 
