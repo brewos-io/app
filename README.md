@@ -44,6 +44,10 @@ BrewOS App is a Progressive Web App (PWA) built with React and TypeScript that p
   <em>Modern, responsive web interface for monitoring and controlling your espresso machine</em>
 </p>
 
+<p align="center">
+  <a href="https://cloud.brewos.io/?demo=true">🚀 Try the Live Demo</a>
+</p>
+
 ---
 
 ## Build Modes
