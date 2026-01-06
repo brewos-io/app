@@ -318,7 +318,7 @@ export class DemoConnection implements IConnection {
         // Emit updated time status after a short delay (simulating reconfiguration)
         setTimeout(() => this.emitTimeStatus(), 500);
         break;
-      case "sync_time":
+      case "sync_time": {
         // Simulate NTP sync process
         console.log("[Demo] NTP sync initiated");
         this.timeSynced = false;
@@ -332,6 +332,7 @@ export class DemoConnection implements IConnection {
           console.log("[Demo] NTP sync completed");
         }, syncDelay);
         break;
+      }
       case "get_time_status":
         // Return current time status
         this.emitTimeStatus();
@@ -1255,7 +1256,8 @@ export class DemoConnection implements IConnection {
   private emitTimeStatus(): void {
     // Calculate current time with timezone offset
     const now = new Date();
-    const totalOffsetMinutes = this.timeSettings.utcOffsetMinutes + 
+    const totalOffsetMinutes =
+      this.timeSettings.utcOffsetMinutes +
       (this.timeSettings.dstEnabled ? this.timeSettings.dstOffsetMinutes : 0);
     const offsetMs = totalOffsetMinutes * 60 * 1000;
     const localTime = new Date(now.getTime() + offsetMs);
@@ -1272,7 +1274,10 @@ export class DemoConnection implements IConnection {
     const offsetHoursAbs = Math.abs(offsetHours);
     const offsetHoursInt = Math.floor(offsetHoursAbs);
     const offsetMinutesInt = Math.round((offsetHoursAbs - offsetHoursInt) * 60);
-    const timezoneString = `UTC${offsetSign}${String(offsetHoursInt).padStart(2, "0")}:${String(offsetMinutesInt).padStart(2, "0")}`;
+    const timezoneString = `UTC${offsetSign}${String(offsetHoursInt).padStart(
+      2,
+      "0"
+    )}:${String(offsetMinutesInt).padStart(2, "0")}`;
 
     this.emit({
       type: "time_status",
