@@ -221,6 +221,7 @@ Comprehensive documentation is available in the [`docs/`](docs/) directory:
 
 ## Related Repositories
 
+- **[wiki](https://github.com/brewos-io/wiki)** - Complete user documentation and guides
 - **[firmware](https://github.com/brewos-io/firmware)** - ESP32 and Pico firmware
 - **[cloud](https://github.com/brewos-io/cloud)** - Cloud service for remote access
 - **[web](https://github.com/brewos-io/web)** - Marketing website
