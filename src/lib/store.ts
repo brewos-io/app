@@ -1204,7 +1204,7 @@ export const useStore = create<BrewOSState>()(
           addAlert("error", data.message as string, set, get);
           break;
 
-        case "time_status":
+        case "time_status": {
           // Handle synced field - could be boolean, string "true"/"false", or number 1/0
           let synced = false;
           if (data.synced !== undefined && data.synced !== null) {
@@ -1227,6 +1227,7 @@ export const useStore = create<BrewOSState>()(
             },
           });
           break;
+        }
 
         case "device_info": {
           // Process preferences from ESP32 if provided
