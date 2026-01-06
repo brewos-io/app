@@ -65,42 +65,8 @@ export function Layout({ onExitDemo }: LayoutProps) {
   // Don't use real cloud device data in demo mode - demo has its own mock device
   const selectedDevice = isDemo ? null : getSelectedDevice();
 
-  // Check if demo banner is minimized to adjust header position
-  const [bannerOffset, setBannerOffset] = useState(() => {
-    if (!isDemo) return "0px";
-    const isMinimized =
-      sessionStorage.getItem("brewos-demo-banner-dismissed") === "true";
-    // Banner heights: full ~56px, minimized ~40px
-    return isMinimized ? "40px" : "56px";
-  });
-
-  // Listen for banner state changes
-  useEffect(() => {
-    if (!isDemo) return;
-
-    const checkBannerState = () => {
-      const isMinimized =
-        sessionStorage.getItem("brewos-demo-banner-dismissed") === "true";
-      setBannerOffset(isMinimized ? "40px" : "56px");
-    };
-
-    const handleBannerStateChange = (event: CustomEvent) => {
-      setBannerOffset(event.detail.minimized ? "40px" : "56px");
-    };
-
-    // Check on mount
-    checkBannerState();
-
-    // Listen for custom event from DemoBanner
-    window.addEventListener("demo-banner-state-change", handleBannerStateChange as EventListener);
-    // Also listen for storage changes (cross-tab)
-    window.addEventListener("storage", checkBannerState);
-
-    return () => {
-      window.removeEventListener("demo-banner-state-change", handleBannerStateChange as EventListener);
-      window.removeEventListener("storage", checkBannerState);
-    };
-  }, [isDemo]);
+  // Banner is always 56px in demo mode (minimize functionality removed)
+  const bannerOffset = isDemo ? "56px" : "0px";
 
   // Scroll-aware header visibility (portrait mode only)
   const [headerVisible, setHeaderVisible] = useState(true);
@@ -467,13 +433,20 @@ export function Layout({ onExitDemo }: LayoutProps) {
       <main
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full",
-          "pt-6",
+          // In demo mode, add padding to account for sticky header/nav to prevent overlap
+          // Normal mode uses standard pt-6
+          !isDemo && "pt-6",
           // FIX #3: Flex Grow
           // Ensure main grows to fill space, pushing any bottom gaps down/away
           "flex-1",
           // Consistent bottom padding for PWA home indicator
           isPWA ? "pb-[calc(2rem+env(safe-area-inset-bottom))]" : "pb-6"
         )}
+        style={{
+          // In demo mode, add padding-top to account for sticky header/nav height
+          // This ensures the page title isn't covered when the sticky header is active
+          paddingTop: isDemo ? "calc(4.75rem)" : undefined,
+        }}
       >
         <Outlet />
       </main>

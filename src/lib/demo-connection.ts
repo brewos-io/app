@@ -58,6 +58,16 @@ export class DemoConnection implements IConnection {
   private powerMeterType: string | null = "PZEM-004T V3";
   private powerMeterConnected = true;
 
+  // Time settings
+  private timeSettings = {
+    useNTP: true,
+    ntpServer: "pool.ntp.org",
+    utcOffsetMinutes: 0,
+    dstEnabled: false,
+    dstOffsetMinutes: 60,
+  };
+  private timeSynced = true; // Track sync status
+
   async connect(): Promise<void> {
     this.isDisconnected = false;
     this.setState("connecting");
@@ -93,6 +103,8 @@ export class DemoConnection implements IConnection {
       preinfusionEnabled: this.preinfusionEnabled,
       preinfusionOnMs: this.preinfusionOnMs,
       preinfusionPauseMs: this.preinfusionPauseMs,
+      // Time settings
+      time: this.timeSettings,
       // User preferences (synced across devices)
       preferences: {
         firstDayOfWeek: "sunday",
@@ -116,6 +128,9 @@ export class DemoConnection implements IConnection {
 
     // Send initial stats
     this.emitStats();
+
+    // Send initial time status
+    this.emitTimeStatus();
   }
 
   disconnect(): void {
@@ -245,6 +260,7 @@ export class DemoConnection implements IConnection {
           maxCurrent: 13,
           ecoBrewTemp: 80,
           ecoTimeoutMinutes: 30,
+          time: this.timeSettings,
         });
         break;
       case "set_device_info":
@@ -262,6 +278,7 @@ export class DemoConnection implements IConnection {
           maxCurrent: 13,
           ecoBrewTemp: 80,
           ecoTimeoutMinutes: 30,
+          time: this.timeSettings,
         });
         break;
       case "record_maintenance":
@@ -284,6 +301,40 @@ export class DemoConnection implements IConnection {
       case "set_cloud_config":
         // Acknowledge settings commands (fire and forget)
         console.log("[Demo] Settings command acknowledged:", cmd);
+        break;
+      case "set_time_config":
+        // Update time settings
+        if (data.useNTP !== undefined)
+          this.timeSettings.useNTP = data.useNTP as boolean;
+        if (data.ntpServer !== undefined)
+          this.timeSettings.ntpServer = data.ntpServer as string;
+        if (data.utcOffsetMinutes !== undefined)
+          this.timeSettings.utcOffsetMinutes = data.utcOffsetMinutes as number;
+        if (data.dstEnabled !== undefined)
+          this.timeSettings.dstEnabled = data.dstEnabled as boolean;
+        if (data.dstOffsetMinutes !== undefined)
+          this.timeSettings.dstOffsetMinutes = data.dstOffsetMinutes as number;
+        console.log("[Demo] Time settings updated:", this.timeSettings);
+        // Emit updated time status after a short delay (simulating reconfiguration)
+        setTimeout(() => this.emitTimeStatus(), 500);
+        break;
+      case "sync_time":
+        // Simulate NTP sync process
+        console.log("[Demo] NTP sync initiated");
+        this.timeSynced = false;
+        // Emit unsynced status immediately
+        this.emitTimeStatus();
+        // Simulate sync delay (5-10 seconds)
+        const syncDelay = 5000 + Math.random() * 5000;
+        setTimeout(() => {
+          this.timeSynced = true;
+          this.emitTimeStatus();
+          console.log("[Demo] NTP sync completed");
+        }, syncDelay);
+        break;
+      case "get_time_status":
+        // Return current time status
+        this.emitTimeStatus();
         break;
       default:
         console.log("[Demo] Unhandled command:", cmd, data);
@@ -1198,6 +1249,37 @@ export class DemoConnection implements IConnection {
       enabled: this.preinfusionEnabled,
       onTimeMs: this.preinfusionOnMs,
       pauseTimeMs: this.preinfusionPauseMs,
+    });
+  }
+
+  private emitTimeStatus(): void {
+    // Calculate current time with timezone offset
+    const now = new Date();
+    const totalOffsetMinutes = this.timeSettings.utcOffsetMinutes + 
+      (this.timeSettings.dstEnabled ? this.timeSettings.dstOffsetMinutes : 0);
+    const offsetMs = totalOffsetMinutes * 60 * 1000;
+    const localTime = new Date(now.getTime() + offsetMs);
+
+    // Format time string (HH:MM:SS) - use UTC methods since we've already applied offset
+    const hours = String(localTime.getUTCHours()).padStart(2, "0");
+    const minutes = String(localTime.getUTCMinutes()).padStart(2, "0");
+    const seconds = String(localTime.getUTCSeconds()).padStart(2, "0");
+    const timeString = `${hours}:${minutes}:${seconds}`;
+
+    // Format timezone string (e.g., "UTC+05:30" or "UTC-08:00")
+    const offsetHours = totalOffsetMinutes / 60;
+    const offsetSign = offsetHours >= 0 ? "+" : "-";
+    const offsetHoursAbs = Math.abs(offsetHours);
+    const offsetHoursInt = Math.floor(offsetHoursAbs);
+    const offsetMinutesInt = Math.round((offsetHoursAbs - offsetHoursInt) * 60);
+    const timezoneString = `UTC${offsetSign}${String(offsetHoursInt).padStart(2, "0")}:${String(offsetMinutesInt).padStart(2, "0")}`;
+
+    this.emit({
+      type: "time_status",
+      synced: this.timeSynced,
+      currentTime: timeString,
+      timezone: timezoneString,
+      utcOffset: totalOffsetMinutes,
     });
   }
 
