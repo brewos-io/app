@@ -434,8 +434,9 @@ export function Layout({ onExitDemo }: LayoutProps) {
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full",
           // In demo mode, add padding to account for sticky header/nav to prevent overlap
-          // Normal mode uses standard pt-6
-          !isDemo && "pt-6",
+          // Normal mode uses standard pt-6.
+          // UPDATE: In Mobile PWA, reduce it to pt-2 because the Safe Area spacer already pushes content down significantly.
+          !isDemo && (isPWA && isMobile ? "pt-2" : "pt-6"),
           // FIX #3: Flex Grow
           // Ensure main grows to fill space, pushing any bottom gaps down/away
           "flex-1",
