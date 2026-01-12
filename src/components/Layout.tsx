@@ -284,6 +284,15 @@ export function Layout({ onExitDemo }: LayoutProps) {
         // Force the container to handle scrolling for proper sticky behavior
         "scroll-smooth"
       )}
+      style={{
+        // On iOS PWA, ensure the container fills the entire viewport height
+        // Use 100dvh to account for dynamic viewport height changes (address bar, etc.)
+        height: isPWA ? "100dvh" : undefined,
+        // Ensure it extends to the very bottom edge
+        bottom: 0,
+        // Prevent overscroll bounce on iOS which can cause white gaps
+        overscrollBehavior: "none",
+      }}
     >
       {/* FIX #2: Unified Sticky Container
          Wraps Curtain, Header, and Nav into ONE sticky element.
@@ -446,7 +455,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
           // In demo mode, add padding-top to account for sticky header/nav height
           // This ensures the page title isn't covered when the sticky header is active
           paddingTop: isDemo ? "calc(4.75rem)" : undefined,
-        }} 
+        }}
       >
         <Outlet />
       </main>
