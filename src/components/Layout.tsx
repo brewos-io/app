@@ -278,9 +278,11 @@ export function Layout({ onExitDemo }: LayoutProps) {
     <div
       ref={mainScrollRef}
       className={cn(
-        // FIX #1: Full Viewport Constraint
-        // Use flex column to ensure content stretches
-        "fixed inset-0 flex flex-col overflow-y-auto overflow-x-hidden bg-theme",
+        // FIX 1: Layout Container Height
+        // Changed "fixed inset-0" to "h-full w-full".
+        // This relies on the #root element's height (100dvh) instead of fixed viewport positioning,
+        // which resolves the "child not taking 100% height" issue on iOS.
+        "h-full w-full flex flex-col overflow-y-auto overflow-x-hidden bg-theme",
         // Force the container to handle scrolling for proper sticky behavior
         "scroll-smooth"
       )}
@@ -433,13 +435,12 @@ export function Layout({ onExitDemo }: LayoutProps) {
       <main
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1",
-          // FIX 1: Top Gap
-          // Changed logic to always use "pt-6" (24px) for consistency with web.
-          // (Previously was "pt-2" for PWA which caused inconsistent spacing)
+          // FIX 2: Top Gap (Page Title to Menu)
+          // Always use "pt-6" (24px) to match the regular web interface.
           !isDemo && "pt-6",
-          // FIX 2: Bottom Gap
-          // Removed the extra "2rem" (32px) and "1rem" buffers.
-          // Now uses ONLY the safe area inset for the home bar.
+          // FIX 3: Bottom Gap
+          // Use "pb-0" for PWA to remove reserved space for the home indicator.
+          // The content will extend behind the home bar, removing the visible gap/margin.
           isPWA ? "pb-0" : "pb-6"
         )}
         style={{
