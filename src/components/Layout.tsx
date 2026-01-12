@@ -440,7 +440,7 @@ export function Layout({ onExitDemo }: LayoutProps) {
           // FIX 2: Bottom Gap
           // Removed the extra "2rem" (32px) and "1rem" buffers.
           // Now uses ONLY the safe area inset for the home bar.
-          isPWA ? "pb-[env(safe-area-inset-bottom)]" : "pb-6"
+          isPWA ? "pb-0" : "pb-6"
         )}
         style={{
           // In demo mode, add padding-top to account for sticky header/nav height
