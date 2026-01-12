@@ -37,6 +37,7 @@ body {
 }
 
 /* Full-screen pages (login, etc.) - prevent scroll entirely */
+/* Works with viewport-fit=cover and html min-height fix to prevent bottom gap */
 .full-page {
   position: fixed;
   inset: 0;

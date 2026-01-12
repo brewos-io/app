@@ -136,7 +136,7 @@ export function UserMenu({ onExitDemo }: UserMenuProps) {
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center gap-2 p-1.5 pr-3 rounded-full transition-all",
+          "flex items-center gap-2 p-1.5 rounded-full transition-all",
           "hover:bg-theme-tertiary",
           isOpen && "bg-theme-tertiary"
         )}
