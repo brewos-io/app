@@ -6,6 +6,7 @@
 
 import { formatDate as formatDateUtil } from "./date";
 import { isDemoMode } from "./demo-mode";
+import { isCloudMode } from "./backend-info";
 
 export type UpdateChannel = "stable" | "beta" | "dev";
 
@@ -150,17 +151,30 @@ interface GitHubRelease {
 
 /**
  * Fetch releases from GitHub API
+ * In cloud mode, uses the cloud proxy endpoint to avoid CORS issues
  */
 async function fetchGitHubReleases(): Promise<VersionInfo[]> {
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/releases`,
-      {
-        headers: {
-          Accept: "application/vnd.github.v3+json",
-        },
-      }
-    );
+    // In cloud mode, use the cloud proxy endpoint to avoid CORS issues
+    // The cloud server can make direct API calls without browser restrictions
+    // Check both the store state and window location as fallback
+    const isCloud =
+      isCloudMode() ||
+      (typeof window !== "undefined" &&
+        (window.location.hostname.includes("cloud.brewos.io") ||
+          window.location.hostname.includes("brewos.io")));
+    
+    const apiUrl = isCloud
+      ? "/api/firmware/releases"
+      : `https://api.github.com/repos/${GITHUB_REPO}/releases`;
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        Accept: "application/vnd.github.v3+json",
+      },
+      // Include credentials in cloud mode for CORS (even though endpoint is public)
+      credentials: isCloud ? "include" : "omit",
+    });
 
     if (!response.ok) {
       throw new Error(`GitHub API error: ${response.status}`);
