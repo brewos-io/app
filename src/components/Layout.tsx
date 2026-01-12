@@ -278,11 +278,9 @@ export function Layout({ onExitDemo }: LayoutProps) {
     <div
       ref={mainScrollRef}
       className={cn(
-        // FIX 1: Layout Container Height
-        // Changed "fixed inset-0" to "h-full w-full".
-        // This relies on the #root element's height (100dvh) instead of fixed viewport positioning,
-        // which resolves the "child not taking 100% height" issue on iOS.
-        "h-full w-full flex flex-col overflow-y-auto overflow-x-hidden bg-theme",
+        // FIX 1: Use 'fixed inset-0' for robust PWA viewport sizing on iOS
+        // This prevents the bottom gap caused by dynamic browser bars or safe area miscalculation
+        "fixed inset-0 flex flex-col overflow-y-auto overflow-x-hidden bg-theme",
         // Force the container to handle scrolling for proper sticky behavior
         "scroll-smooth"
       )}
@@ -435,19 +433,20 @@ export function Layout({ onExitDemo }: LayoutProps) {
       <main
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1",
-          // FIX 2: Top Gap (Page Title to Menu)
-          // Always use "pt-6" (24px) to match the regular web interface.
+          // FIX 2: Top Gap - Consistent spacing with web
+          // Always use "pt-6" (24px) instead of the tighter "pt-2" for PWA.
           !isDemo && "pt-6",
-          // FIX 3: Bottom Gap
-          // Use "pb-0" for PWA to remove reserved space for the home indicator.
-          // The content will extend behind the home bar, removing the visible gap/margin.
+          // FIX 3: Bottom Gap - Remove extra padding
+          // "pb-0" allows the content/background to extend to the very bottom edge.
+          // "pb-[env(safe-area-inset-bottom)]" would stop it right above the home bar.
+          // Use "pb-0" to eliminate the visual gap completely.
           isPWA ? "pb-0" : "pb-6"
         )}
         style={{
           // In demo mode, add padding-top to account for sticky header/nav height
           // This ensures the page title isn't covered when the sticky header is active
           paddingTop: isDemo ? "calc(4.75rem)" : undefined,
-        }}
+        }} 
       >
         <Outlet />
       </main>
