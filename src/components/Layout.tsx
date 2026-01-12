@@ -434,14 +434,14 @@ export function Layout({ onExitDemo }: LayoutProps) {
         className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full",
           // In demo mode, add padding to account for sticky header/nav to prevent overlap
-          // Normal mode uses standard pt-6.
-          // UPDATE: In Mobile PWA, reduce it to pt-2 because the Safe Area spacer already pushes content down significantly.
-          !isDemo && (isPWA && isMobile ? "pt-2" : "pt-6"),
+          // Normal mode uses standard pt-6 for consistent spacing between nav and content.
+          !isDemo && "pt-6",
           // FIX #3: Flex Grow
           // Ensure main grows to fill space, pushing any bottom gaps down/away
           "flex-1",
           // Consistent bottom padding for PWA home indicator
-          isPWA ? "pb-[calc(2rem+env(safe-area-inset-bottom))]" : "pb-6"
+          // Reduced from 2rem to 1rem to minimize bottom gap while still providing safe area spacing
+          isPWA ? "pb-[calc(1rem+env(safe-area-inset-bottom))]" : "pb-6"
         )}
         style={{
           // In demo mode, add padding-top to account for sticky header/nav height
