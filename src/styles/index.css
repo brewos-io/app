@@ -3,18 +3,26 @@
 @tailwind utilities;
 
 /* iOS Safari viewport fix - prevent overscroll bounce and white gaps */
-/* Use 100dvh for PWA to properly account for safe areas and prevent bottom gap */
+/* With viewport-fit=cover, the document moves "up" into notch area */
+/* The hack: Set min-height to calc(100% + env(safe-area-inset-top)) to prevent white bar at bottom */
+/* Reference: https://dev.to/karmasakshi/make-your-pwas-look-handsome-on-ios-1o08 */
 html {
+  /* This prevents the white bar at bottom when using viewport-fit=cover */
+  min-height: calc(100% + env(safe-area-inset-top));
   height: 100%;
   height: 100dvh; /* Use dvh for PWA to fix bottom gap issue */
   background-color: var(--bg); /* Match body background to prevent gap */
   overflow: hidden;
+  /* Note: Safe area padding is handled in Layout component, not here */
 }
 
 body {
   height: 100%;
   height: 100dvh; /* Use dvh for PWA to fix bottom gap issue */
   overflow: hidden;
+  /* Ensure body extends fully with viewport-fit=cover */
+  margin: 0;
+  padding: 0;
 }
 
 #root {
@@ -23,6 +31,9 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  /* Ensure root has no bottom padding/margin that could cause gap */
+  padding-bottom: 0;
+  margin-bottom: 0;
 }
 
 /* Full-screen pages (login, etc.) - prevent scroll entirely */

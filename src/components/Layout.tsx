@@ -278,20 +278,24 @@ export function Layout({ onExitDemo }: LayoutProps) {
     <div
       ref={mainScrollRef}
       className={cn(
-        // FIX 1: Use 'fixed inset-0' for robust PWA viewport sizing on iOS
-        // This prevents the bottom gap caused by dynamic browser bars or safe area miscalculation
+        // FIX 1: Use 'fixed inset-0' - with viewport-fit=cover this extends into safe areas
+        // This should eliminate the bottom gap on iOS PWA
         "fixed inset-0 flex flex-col overflow-y-auto overflow-x-hidden bg-theme",
         // Force the container to handle scrolling for proper sticky behavior
         "scroll-smooth"
       )}
       style={{
-        // On iOS PWA, ensure the container fills the entire viewport height
-        // Use 100dvh to account for dynamic viewport height changes (address bar, etc.)
-        height: isPWA ? "100dvh" : undefined,
-        // Ensure it extends to the very bottom edge
-        bottom: 0,
-        // Prevent overscroll bounce on iOS which can cause white gaps
-        overscrollBehavior: "none",
+        // With viewport-fit=cover, inset-0 already extends into safe areas
+        // Just ensure no gaps by explicitly setting bottom to 0
+        ...(isPWA && {
+          bottom: 0,
+          // Use 100vh to fill viewport (viewport-fit=cover makes this include safe areas)
+          height: "100vh",
+          // Prevent overscroll bounce
+          overscrollBehavior: "none",
+          // Ensure background extends fully
+          minHeight: "100vh",
+        }),
       }}
     >
       {/* FIX #2: Unified Sticky Container
