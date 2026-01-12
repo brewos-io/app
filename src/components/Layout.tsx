@@ -432,16 +432,15 @@ export function Layout({ onExitDemo }: LayoutProps) {
       {/* Main Content */}
       <main
         className={cn(
-          "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full",
-          // In demo mode, add padding to account for sticky header/nav to prevent overlap
-          // Normal mode uses standard pt-6 for consistent spacing between nav and content.
+          "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1",
+          // FIX 1: Top Gap
+          // Changed logic to always use "pt-6" (24px) for consistency with web.
+          // (Previously was "pt-2" for PWA which caused inconsistent spacing)
           !isDemo && "pt-6",
-          // FIX #3: Flex Grow
-          // Ensure main grows to fill space, pushing any bottom gaps down/away
-          "flex-1",
-          // Consistent bottom padding for PWA home indicator
-          // Reduced from 2rem to 1rem to minimize bottom gap while still providing safe area spacing
-          isPWA ? "pb-[calc(1rem+env(safe-area-inset-bottom))]" : "pb-6"
+          // FIX 2: Bottom Gap
+          // Removed the extra "2rem" (32px) and "1rem" buffers.
+          // Now uses ONLY the safe area inset for the home bar.
+          isPWA ? "pb-[env(safe-area-inset-bottom)]" : "pb-6"
         )}
         style={{
           // In demo mode, add padding-top to account for sticky header/nav height
