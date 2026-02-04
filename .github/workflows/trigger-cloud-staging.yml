@@ -5,17 +5,20 @@
 # NOTE: This workflow requires a Personal Access Token (PAT) with 'repo' scope
 # stored as CROSS_REPO_TOKEN secret. GITHUB_TOKEN cannot trigger repository_dispatch
 # events in other repositories, even within the same organization.
+# DISABLED: Uncomment the 'on' block below and remove workflow_dispatch to re-enable
 name: "Trigger Cloud Staging Deployment"
 
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - "src/**"
+#       - "package.json"
+#       - "vite.config.ts"
+#       - "tsconfig.json"
+#       - ".github/workflows/trigger-cloud-staging.yml"
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "package.json"
-      - "vite.config.ts"
-      - "tsconfig.json"
-      - ".github/workflows/trigger-cloud-staging.yml"
+  workflow_dispatch: {}  # Manual only while staging is disabled
 
 # Only trigger one deployment at a time
 concurrency:
