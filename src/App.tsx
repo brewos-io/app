@@ -642,6 +642,12 @@ function App() {
               }
             />
             <Route path="setup" element={<Setup />} />
+            <Route
+              path="ota"
+              element={
+                <Navigate to={{ pathname: "/settings", hash: "system" }} replace />
+              }
+            />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
