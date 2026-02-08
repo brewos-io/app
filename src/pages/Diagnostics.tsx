@@ -22,7 +22,6 @@ import {
   MinusCircle,
   Loader2,
   RefreshCw,
-  Cable,
   ArrowLeft,
   HelpCircle,
 } from "lucide-react";
@@ -33,8 +32,7 @@ import type {
 } from "@/lib/types";
 import { DIAGNOSTIC_TESTS, getTestsForMachineType } from "@/lib/types";
 
-// Power meter test ID for dynamic name display
-const POWER_METER_TEST_ID = 0x0a;
+// Power meter hardware test removed (v2.32 - MQTT only)
 
 // Map test IDs to icons
 function getTestIcon(testId: number) {
@@ -64,7 +62,7 @@ function getTestIcon(testId: number) {
 
     // Communication
     0x0b: <Wifi className="w-5 h-5" />, // ESP32 Communication
-    0x0a: <Cable className="w-5 h-5" />, // Power Meter (PZEM, JSY, Eastron)
+    // 0x0a: Power Meter removed (v2.32 - MQTT only)
 
     // User Interface
     0x0c: <Speaker className="w-5 h-5" />, // Buzzer
@@ -143,20 +141,14 @@ function TroubleshootItem({
 
 function DiagnosticResultRow({
   result,
-  configuredMeterType,
 }: {
   result: DiagnosticResult;
-  configuredMeterType?: string | null;
 }) {
   const statusInfo = getStatusInfo(result.status);
   const testMeta = DIAGNOSTIC_TESTS.find((t) => t.id === result.testId);
   const isOptional = testMeta?.optional ?? false;
 
-  // For power meter test, show the configured meter type if available
-  const displayName =
-    result.testId === POWER_METER_TEST_ID && configuredMeterType
-      ? `Power Meter (${configuredMeterType})`
-      : result.name;
+  const displayName = result.name;
 
   return (
     <div className="flex items-center gap-4 p-4 rounded-xl bg-theme-secondary border border-theme">
@@ -193,14 +185,7 @@ export function Diagnostics() {
   const resetDiagnostics = useStore((s) => s.resetDiagnostics);
   const pico = useStore((s) => s.pico);
   const device = useStore((s) => s.device);
-  const powerMeter = useStore((s) => s.power.meter);
   const { sendCommand } = useCommand();
-
-  // Get configured power meter type for dynamic display
-  const configuredMeterType =
-    powerMeter?.source === "hardware" && powerMeter?.meterType
-      ? powerMeter.meterType
-      : null;
 
   // Get tests applicable to this machine type
   const machineType = (device.machineType || "dual_boiler") as MachineType;
@@ -402,7 +387,6 @@ export function Diagnostics() {
                 <DiagnosticResultRow
                   key={`${result.testId}-${index}`}
                   result={result}
-                  configuredMeterType={configuredMeterType}
                 />
               ))}
             </div>
@@ -456,7 +440,7 @@ export function Diagnostics() {
           />
           <TroubleshootItem
             title="Power Meter"
-            description="Optional hardware power meter supports PZEM-004T, JSY-MK-163T/194T, and Eastron SDM120/230 via Modbus."
+            description="Power monitoring via MQTT smart plugs (Shelly, Tasmota). Configure in Settings."
           />
         </div>
       </Card>

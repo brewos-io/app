@@ -435,57 +435,7 @@ export class DemoConnection implements IConnection {
     }, 3000);
   }
 
-  private simulatePowerMeterDiscovery(): void {
-    // Simulate auto-detection of power meter
-    console.log("[Demo] Starting power meter auto-discovery...");
-
-    // Simulate scanning different baud rates with progress
-    const steps = [
-      { step: 1, progress: "Scanning UART1..." },
-      { step: 2, progress: "Trying 9600 baud (PZEM-004T, JSY, Eastron)..." },
-      { step: 3, progress: "Trying 4800 baud (JSY, Eastron)..." },
-      { step: 4, progress: "Trying 2400 baud (Eastron)..." },
-    ];
-
-    // Emit each step with delays
-    steps.forEach(({ step, progress }, index) => {
-      setTimeout(() => {
-        this.emit({
-          type: "power_meter_status",
-          source: "hardware",
-          connected: false,
-          meterType: null,
-          lastUpdate: null,
-          reading: null,
-          error: null,
-          discovering: true,
-          discoveryProgress: progress,
-          discoveryStep: step,
-          discoveryTotal: 4,
-        });
-      }, index * 600);
-    });
-
-    // Final result after all steps
-    setTimeout(() => {
-      // Discovery complete - simulate finding a PZEM-004T
-      this.powerMeterType = "PZEM-004T V3";
-      this.powerMeterEnabled = true;
-      this.powerMeterConnected = true;
-      this.powerMeterSource = "hardware";
-
-      this.emit({
-        type: "power_meter_status",
-        source: "hardware",
-        connected: true,
-        meterType: "PZEM-004T V3",
-        lastUpdate: Date.now(),
-        reading: this.generatePowerMeterReading(),
-        error: null,
-        discovering: false,
-      });
-    }, steps.length * 600 + 400);
-  }
+  // simulatePowerMeterDiscovery() removed (v2.32 - hardware metering removed, MQTT only)
 
   private generatePowerMeterReading(): {
     voltage: number;
@@ -747,40 +697,7 @@ export class DemoConnection implements IConnection {
 
     // Communication
     testsToRun.push(0x0b); // ESP32
-    testsToRun.push(0x0a); // Power meter (optional)
-
-    // Update power meter test based on configuration
-    if (this.powerMeterEnabled && this.powerMeterSource === "hardware") {
-      if (this.powerMeterConnected && this.powerMeterType) {
-        // Power meter configured and working
-        const reading = this.generatePowerMeterReading();
-        allTests[0x0a] = {
-          status: 0, // Pass
-          rawValue: Math.round(reading.voltage * 10), // Voltage * 10
-          min: 2000, // 200V
-          max: 2600, // 260V
-          message: `${reading.voltage}V ${reading.current}A - ${this.powerMeterType} OK`,
-        };
-      } else {
-        // Power meter configured but not responding
-        allTests[0x0a] = {
-          status: 1, // Fail
-          rawValue: 0,
-          min: 0,
-          max: 0,
-          message: "No response from meter",
-        };
-      }
-    } else {
-      // Power meter not configured - skip
-      allTests[0x0a] = {
-        status: 3, // Skip
-        rawValue: 0,
-        min: 0,
-        max: 0,
-        message: "Not configured",
-      };
-    }
+    // 0x0a (Power meter hardware test) removed - MQTT only since v2.32
 
     // User interface
     testsToRun.push(0x0c); // Buzzer
