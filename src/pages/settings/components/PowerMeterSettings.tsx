@@ -10,8 +10,22 @@ import {
   ChevronRight,
   CheckCircle2,
   XCircle,
+  FlaskConical,
+  Loader2,
 } from "lucide-react";
 import { PowerMeterStatus } from "./PowerMeterStatus";
+
+interface TestStep {
+  name: string;
+  ok: boolean;
+  detail: string;
+}
+
+interface TestResult {
+  success: boolean;
+  message: string;
+  steps?: TestStep[];
+}
 
 type PowerSource = "none" | "hardware" | "mqtt";
 
@@ -38,6 +52,10 @@ export function PowerMeterSettings() {
   const [mqttFormat, setMqttFormat] = useState<string>("auto");
   const [initializedFromStore, setInitializedFromStore] = useState(false);
 
+  // Test state
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
+
   // Initialize from store (only once when entering edit mode)
   useEffect(() => {
     if (powerMeter && !editing && !initializedFromStore) {
@@ -55,8 +73,27 @@ export function PowerMeterSettings() {
   useEffect(() => {
     if (!editing) {
       setInitializedFromStore(false);
+      setTestResult(null);
     }
   }, [editing]);
+
+  // Listen for power meter test results
+  useEffect(() => {
+    const handleTestResult = (event: CustomEvent<TestResult>) => {
+      setTesting(false);
+      setTestResult(event.detail);
+    };
+
+    window.addEventListener(
+      "power_meter_test_result",
+      handleTestResult as EventListener
+    );
+    return () =>
+      window.removeEventListener(
+        "power_meter_test_result",
+        handleTestResult as EventListener
+      );
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -101,6 +138,18 @@ export function PowerMeterSettings() {
         successMessage: "Starting auto-detection...",
       }
     );
+  };
+
+  const handleTestMqtt = () => {
+    if (testing || !mqttTopic) return;
+    setTesting(true);
+    setTestResult(null);
+    sendCommand("test_power_meter", {
+      topic: mqttTopic,
+      format: mqttFormat,
+    });
+    // Timeout fallback (test waits up to 15s on ESP + network latency)
+    setTimeout(() => setTesting(false), 20000);
   };
 
   const handleCancel = () => {
@@ -324,6 +373,73 @@ export function PowerMeterSettings() {
                   <option value="generic">Generic JSON</option>
                 </select>
               </div>
+
+              <Button
+                variant="secondary"
+                onClick={handleTestMqtt}
+                disabled={testing || !mqttTopic}
+                className="w-full"
+              >
+                {testing ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Testing... (up to 15s)
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <FlaskConical className="w-4 h-4" />
+                    Test Connection
+                  </span>
+                )}
+              </Button>
+
+              {/* Test Results */}
+              {testResult && (
+                <div
+                  className={`p-3 rounded-lg border space-y-2 ${
+                    testResult.success
+                      ? "bg-green-500/10 border-green-500/20"
+                      : "bg-red-500/10 border-red-500/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {testResult.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    )}
+                    <span
+                      className={`text-sm font-medium ${
+                        testResult.success ? "text-green-500" : "text-red-500"
+                      }`}
+                    >
+                      {testResult.message}
+                    </span>
+                  </div>
+
+                  {testResult.steps && testResult.steps.length > 0 && (
+                    <div className="space-y-1 ml-6">
+                      {testResult.steps.map((step, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs">
+                          {step.ok ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+                          )}
+                          <div>
+                            <span className="font-medium text-theme">
+                              {step.name}:
+                            </span>{" "}
+                            <span className="text-theme-muted">
+                              {step.detail}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <p className="text-xs text-theme-muted">
                 Supports Shelly Plug, Tasmota-flashed smart plugs, and generic

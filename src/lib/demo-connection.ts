@@ -52,10 +52,10 @@ export class DemoConnection implements IConnection {
   private machineType: "dual_boiler" | "single_boiler" | "heat_exchanger" =
     "dual_boiler";
 
-  // Power meter simulation - configured by default in demo mode
+  // Power meter simulation - configured by default in demo mode (MQTT only since v2.32)
   private powerMeterEnabled = true;
-  private powerMeterSource: "none" | "hardware" | "mqtt" = "hardware";
-  private powerMeterType: string | null = "PZEM-004T V3";
+  private powerMeterSource: "none" | "mqtt" = "mqtt";
+  private powerMeterType: string | null = "MQTT (Shelly Plug)";
   private powerMeterConnected = true;
 
   // Time settings
@@ -291,8 +291,9 @@ export class DemoConnection implements IConnection {
       case "configure_power_meter":
         this.handleConfigurePowerMeter(data);
         break;
-      case "start_power_meter_discovery":
-        this.simulatePowerMeterDiscovery();
+      // "start_power_meter_discovery" removed (v2.32 - MQTT only)
+      case "test_power_meter":
+        this.handleTestPowerMeter(data);
         break;
       case "set_power":
       case "set_eco":
@@ -377,20 +378,10 @@ export class DemoConnection implements IConnection {
   }
 
   private handleConfigurePowerMeter(data: Record<string, unknown>): void {
-    const source = data.source as "none" | "hardware" | "mqtt";
+    const source = data.source as "none" | "mqtt";
     this.powerMeterSource = source;
 
-    if (source === "hardware") {
-      const meterType = data.meterType as string;
-      this.powerMeterType = meterType === "auto" ? null : meterType;
-      this.powerMeterEnabled = true;
-      this.powerMeterConnected = this.powerMeterType !== null;
-
-      console.log("[Demo] Power meter configured:", {
-        source,
-        meterType: this.powerMeterType,
-      });
-    } else if (source === "mqtt") {
+    if (source === "mqtt") {
       this.powerMeterType = "MQTT";
       this.powerMeterEnabled = true;
       this.powerMeterConnected = true;
@@ -402,6 +393,46 @@ export class DemoConnection implements IConnection {
 
     // Emit updated power meter status
     this.emitPowerMeterStatus();
+  }
+
+  private handleTestPowerMeter(data: Record<string, unknown>): void {
+    const topic = data.topic as string;
+    console.log("[Demo] Testing power meter:", topic);
+
+    // Simulate test with delay
+    setTimeout(() => {
+      const hasTopic = topic && topic.length > 0;
+      const reading = this.generatePowerMeterReading();
+
+      this.emit({
+        type: "power_meter_test_result",
+        success: hasTopic,
+        message: hasTopic
+          ? "Power meter test passed - receiving data"
+          : "MQTT topic is empty",
+        steps: [
+          {
+            name: "MQTT Broker",
+            ok: true,
+            detail: "Connected",
+          },
+          {
+            name: "Topic",
+            ok: hasTopic,
+            detail: hasTopic ? topic : "No topic provided",
+          },
+          ...(hasTopic
+            ? [
+                {
+                  name: "Data Received",
+                  ok: true,
+                  detail: `Power: ${reading.power.toFixed(0)}W, Voltage: ${reading.voltage.toFixed(1)}V, Current: ${reading.current.toFixed(2)}A`,
+                },
+              ]
+            : []),
+        ],
+      });
+    }, 3000);
   }
 
   private simulatePowerMeterDiscovery(): void {

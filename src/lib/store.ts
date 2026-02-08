@@ -1009,6 +1009,19 @@ export const useStore = create<BrewOSState>()(
           break;
         }
 
+        case "power_meter_test_result": {
+          // Fire a custom event that PowerMeterSettings can listen for
+          const pmEvent = new CustomEvent("power_meter_test_result", {
+            detail: {
+              success: data.success as boolean,
+              message: data.message as string,
+              steps: data.steps as Record<string, unknown>[] | undefined,
+            },
+          });
+          window.dispatchEvent(pmEvent);
+          break;
+        }
+
         case "preinfusion_settings":
           set((state) => ({
             preinfusion: {
@@ -1437,12 +1450,6 @@ export const useStore = create<BrewOSState>()(
                     }
                   : null,
                 error: (meterData.error as string) || null,
-                discovering: (meterData.discovering as boolean) ?? false,
-                discoveryProgress:
-                  (meterData.discoveryProgress as string) || undefined,
-                discoveryStep: (meterData.discoveryStep as number) || undefined,
-                discoveryTotal:
-                  (meterData.discoveryTotal as number) || undefined,
               },
             },
           }));

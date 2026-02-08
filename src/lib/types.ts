@@ -37,6 +37,7 @@ export type MessageType =
   | "power_meter_status"
   | "mqtt_status"
   | "mqtt_test_result"
+  | "power_meter_test_result"
   | "bbw_settings"
   | "preinfusion_settings"
   | "stats"
@@ -127,7 +128,7 @@ export interface PowerMeterReading {
 }
 
 export interface PowerMeterStatus {
-  source: "none" | "hardware" | "mqtt";
+  source: "none" | "mqtt"; // "hardware" removed (v2.32 - MQTT only)
   connected: boolean;
   meterType: string | null;
   lastUpdate: number | null;
@@ -659,14 +660,7 @@ export const DIAGNOSTIC_TESTS: DiagnosticTestMeta[] = [
     optional: false,
     category: "communication",
   },
-  {
-    id: 0x0a,
-    name: "Hardware Power Meter",
-    description: "Modbus RTU via UART1 on GPIO6/7 (PZEM, JSY, Eastron meters)",
-    machineTypes: [], // All machine types
-    optional: true, // Optional power monitoring add-on
-    category: "communication",
-  },
+  // Hardware Power Meter test removed (v2.32 - MQTT only, no hardware metering)
 
   // ==========================================================================
   // USER INTERFACE
