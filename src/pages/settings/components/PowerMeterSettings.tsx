@@ -265,6 +265,7 @@ export function PowerMeterSettings() {
               )}
 
               {powerMeter?.meterType &&
+                powerMeter?.connected &&
                 meterType === "auto" &&
                 !powerMeter?.discovering && (
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
@@ -272,6 +273,19 @@ export function PowerMeterSettings() {
                     <div className="text-sm">
                       <p className="font-medium text-green-500">Detected</p>
                       <p className="text-theme-muted">{powerMeter.meterType}</p>
+                    </div>
+                  </div>
+                )}
+
+              {powerMeter?.source === "hardware" &&
+                !powerMeter?.connected &&
+                !powerMeter?.discovering &&
+                powerMeter?.error && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium text-red-500">Not detected</p>
+                      <p className="text-theme-muted">{powerMeter.error}</p>
                     </div>
                   </div>
                 )}
