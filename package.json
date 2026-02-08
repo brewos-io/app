@@ -1,6 +1,6 @@
 {
   "name": "@brewos/app",
-  "version": "0.8.60",
+  "version": "0.8.61",
   "type": "module",
   "scripts": {
     "dev": "vite",
