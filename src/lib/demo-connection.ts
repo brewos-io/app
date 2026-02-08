@@ -399,40 +399,45 @@ export class DemoConnection implements IConnection {
     const topic = data.topic as string;
     console.log("[Demo] Testing power meter:", topic);
 
-    // Simulate test with delay
-    setTimeout(() => {
-      const hasTopic = topic && topic.length > 0;
-      const reading = this.generatePowerMeterReading();
+    const hasTopic = topic && topic.length > 0;
 
+    // Simulate instant response (non-blocking, like real firmware)
+    setTimeout(() => {
+      if (!hasTopic) {
+        this.emit({
+          type: "power_meter_test_result",
+          success: false,
+          message: "MQTT topic is empty",
+          steps: [
+            { name: "MQTT Broker", ok: true, detail: "Connected" },
+            { name: "Topic", ok: false, detail: "No topic provided" },
+          ],
+        });
+        return;
+      }
+
+      // First response: subscribed, waiting for data
       this.emit({
         type: "power_meter_test_result",
-        success: hasTopic,
-        message: hasTopic
-          ? "Power meter test passed - receiving data"
-          : "MQTT topic is empty",
+        success: false,
+        message: "Subscribed to topic - waiting for data (check status above)",
         steps: [
-          {
-            name: "MQTT Broker",
-            ok: true,
-            detail: "Connected",
-          },
-          {
-            name: "Topic",
-            ok: hasTopic,
-            detail: hasTopic ? topic : "No topic provided",
-          },
-          ...(hasTopic
-            ? [
-                {
-                  name: "Data Received",
-                  ok: true,
-                  detail: `Power: ${reading.power.toFixed(0)}W, Voltage: ${reading.voltage.toFixed(1)}V, Current: ${reading.current.toFixed(2)}A`,
-                },
-              ]
-            : []),
+          { name: "MQTT Broker", ok: true, detail: "Connected" },
+          { name: "Topic", ok: true, detail: topic },
+          { name: "Subscribed", ok: true, detail: "Listening on topic" },
+          { name: "Data Received", ok: false, detail: "Waiting for first message - status will update automatically" },
         ],
       });
-    }, 3000);
+
+      // Simulate data arriving after a few seconds (power_meter_status update)
+      setTimeout(() => {
+        this.powerMeterSource = "mqtt";
+        this.powerMeterType = "MQTT";
+        this.powerMeterEnabled = true;
+        this.powerMeterConnected = true;
+        this.emitPowerMeterStatus();
+      }, 2000);
+    }, 500);
   }
 
   // simulatePowerMeterDiscovery() removed (v2.32 - hardware metering removed, MQTT only)

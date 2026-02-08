@@ -12,6 +12,7 @@ import {
   XCircle,
   FlaskConical,
   Loader2,
+  Clock,
 } from "lucide-react";
 import { PowerMeterStatus } from "./PowerMeterStatus";
 
@@ -275,52 +276,69 @@ export function PowerMeterSettings() {
               </Button>
 
               {/* Test Results */}
-              {testResult && (
-                <div
-                  className={`p-3 rounded-lg border space-y-2 ${
-                    testResult.success
-                      ? "bg-green-500/10 border-green-500/20"
-                      : "bg-red-500/10 border-red-500/20"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {testResult.success ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                    )}
-                    <span
-                      className={`text-sm font-medium ${
-                        testResult.success ? "text-green-500" : "text-red-500"
-                      }`}
-                    >
-                      {testResult.message}
-                    </span>
-                  </div>
+              {testResult && (() => {
+                // Determine result state: success (green), waiting (amber), or failed (red)
+                const isWaiting =
+                  !testResult.success &&
+                  testResult.steps?.some((s) => s.name === "Subscribed" && s.ok);
+                const colorClass = testResult.success
+                  ? "bg-green-500/10 border-green-500/20"
+                  : isWaiting
+                    ? "bg-amber-500/10 border-amber-500/20"
+                    : "bg-red-500/10 border-red-500/20";
+                const textClass = testResult.success
+                  ? "text-green-500"
+                  : isWaiting
+                    ? "text-amber-500"
+                    : "text-red-500";
 
-                  {testResult.steps && testResult.steps.length > 0 && (
-                    <div className="space-y-1 ml-6">
-                      {testResult.steps.map((step, i) => (
-                        <div key={i} className="flex items-start gap-2 text-xs">
-                          {step.ok ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
-                          )}
-                          <div>
-                            <span className="font-medium text-theme">
-                              {step.name}:
-                            </span>{" "}
-                            <span className="text-theme-muted">
-                              {step.detail}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                return (
+                  <div className={`p-3 rounded-lg border space-y-2 ${colorClass}`}>
+                    <div className="flex items-center gap-2">
+                      {testResult.success ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      ) : isWaiting ? (
+                        <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      )}
+                      <span className={`text-sm font-medium ${textClass}`}>
+                        {testResult.message}
+                      </span>
                     </div>
-                  )}
-                </div>
-              )}
+
+                    {testResult.steps && testResult.steps.length > 0 && (
+                      <div className="space-y-1 ml-6">
+                        {testResult.steps.map((step, i) => (
+                          <div key={i} className="flex items-start gap-2 text-xs">
+                            {step.ok ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+                            )}
+                            <div>
+                              <span className="font-medium text-theme">
+                                {step.name}:
+                              </span>{" "}
+                              <span className="text-theme-muted">
+                                {step.detail}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {isWaiting && (
+                      <p className="text-xs text-amber-500/80 ml-6">
+                        Tasmota default TelePeriod is 300s. Try running{" "}
+                        <code className="bg-amber-500/10 px-1 rounded">TelePeriod 10</code>{" "}
+                        in the Tasmota console to speed it up.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
 
               <p className="text-xs text-theme-muted">
                 Supports Shelly Plug, Tasmota-flashed smart plugs, and generic
