@@ -70,14 +70,17 @@ export function PowerMeterStatus() {
         </span>
       </div>
 
-      {/* Energy */}
+      {/* Energy Today */}
       <div className="flex items-center justify-between py-1.5">
         <div className="flex items-center gap-2">
           <Gauge className="w-4 h-4 text-theme-muted" />
-          <span className="text-sm text-theme-muted">Energy Total</span>
+          <span className="text-sm text-theme-muted">Energy Today</span>
         </div>
         <span className="text-sm font-medium text-theme">
-          {reading.energy.toFixed(2)} kWh
+          {reading.energy < 10
+            ? reading.energy.toFixed(3)
+            : reading.energy.toFixed(2)}{" "}
+          kWh
         </span>
       </div>
 

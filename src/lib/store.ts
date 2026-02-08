@@ -704,12 +704,13 @@ export const useStore = create<BrewOSState>()(
               : state.temps,
             // Pressure
             pressure: (data.pressure as number) ?? state.pressure,
-            // Power
+            // Power: only update current/maxCurrent from status; voltage is configured
+            // (mainsVoltage) and must not be overwritten by live meter reading from status
             power: powerData
               ? {
                   ...state.power,
                   current: (powerData.current as number) ?? state.power.current,
-                  voltage: (powerData.voltage as number) ?? state.power.voltage,
+                  voltage: state.power.voltage,
                   maxCurrent:
                     (powerData.maxCurrent as number) ?? state.power.maxCurrent,
                 }
@@ -942,7 +943,7 @@ export const useStore = create<BrewOSState>()(
             power: {
               ...state.power,
               current: (data.power as number) ?? state.power.current,
-              voltage: (data.voltage as number) ?? state.power.voltage,
+              voltage: state.power.voltage,
             },
             water: {
               tankLevel:
@@ -1450,6 +1451,8 @@ export const useStore = create<BrewOSState>()(
                     }
                   : null,
                 error: (meterData.error as string) || null,
+                mqttTopic: (meterData.mqttTopic as string) || undefined,
+                mqttFormat: (meterData.mqttFormat as string) || undefined,
               },
             },
           }));

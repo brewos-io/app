@@ -134,6 +134,8 @@ export interface PowerMeterStatus {
   lastUpdate: number | null;
   reading: PowerMeterReading | null;
   error: string | null;
+  mqttTopic?: string;      // Configured MQTT topic (e.g. "tele/tasmota_XXXX/SENSOR")
+  mqttFormat?: string;     // Configured format (auto, tasmota, shelly, generic)
   discovering?: boolean;
   discoveryProgress?: string;
   discoveryStep?: number;

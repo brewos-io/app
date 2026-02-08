@@ -59,6 +59,13 @@ export function PowerMeterSettings() {
       // Map any legacy "hardware" source to "none" since hardware metering was removed
       const currentSource = powerMeter.source === "mqtt" ? "mqtt" : "none";
       setSource(currentSource);
+      // Restore MQTT config from store (so settings survive page refresh)
+      if (powerMeter.mqttTopic) {
+        setMqttTopic(powerMeter.mqttTopic);
+      }
+      if (powerMeter.mqttFormat) {
+        setMqttFormat(powerMeter.mqttFormat);
+      }
       setInitializedFromStore(true);
     }
   }, [powerMeter, editing, initializedFromStore]);
@@ -162,7 +169,7 @@ export function PowerMeterSettings() {
             <div className="flex items-center justify-between py-2 border-b border-theme">
               <span className="text-sm text-theme-muted">MQTT Topic</span>
               <span className="text-sm font-medium text-theme truncate max-w-[200px]">
-                {mqttTopic || "Not configured"}
+                {powerMeter?.mqttTopic || mqttTopic || "Not configured"}
               </span>
             </div>
           )}
